@@ -1,4 +1,4 @@
-using Adapt, CUDA
+using Adapt, CUDA, AMDGPU
 
 struct CellArray{T,N,T_array<:AbstractArray} <: AbstractArray{T,N}
     data::T_array
@@ -24,12 +24,14 @@ struct CellArray{T,N,T_array<:AbstractArray} <: AbstractArray{T,N}
 end
 
 CellArray(::Type{T}, dims::NTuple{N,Int}) where {T,N}                   = CellArray{T,N}(dims, Array)
-CellArray(::Type{T}, dims::Int...) where {T}                            = CellArray{T,N}(dims)
+CellArray(::Type{T}, dims::Int...) where {T}                            = CellArray(T, dims)
 CuCellArray(::Type{T}, dims::NTuple{N,Int}) where {T,N}                 = CellArray{T,N}(dims, CuArray)
-CuCellArray(::Type{T}, dims::Int...) where {T}                          = CuCellArray{T,N}(dims)
+CuCellArray(::Type{T}, dims::Int...) where {T}                          = CuCellArray(T, dims)
+ROCCellArray(::Type{T}, dims::NTuple{N,Int}) where {T,N}                = CellArray{T,N}(dims, ROCArray)
+ROCCellArray(::Type{T}, dims::Int...) where {T}                         = ROCCellArray(T, dims)
 
 @inline Base.IndexStyle(::Type{<:CellArray})                            = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...   )                        = 1
+@inline Base.size(T::Type{<:Number}, args...)                           = 1
 @inline Base.size(A::CellArray)                                         = A.dims
 @inline Base.getindex(A::CellArray{T}, i::Int) where {T <: Number}      = T(A.data[i,1])
 @inline Base.getindex(A::CellArray{T}, i::Int) where {T}                = T(getindex(A.data, i, j) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
