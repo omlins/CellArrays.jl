@@ -10,4 +10,5 @@ module CellArrays
 
 include("CellArray.jl")
 
+export CellArray, CuCellArray, cellsize
 end
