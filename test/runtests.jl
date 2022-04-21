@@ -11,7 +11,7 @@ function runtests()
     testfiles = sort(filter(istest, readdir(testdir)))
 
     nfail = 0
-    printstyled("Testing package JustSayIt.jl\n"; bold=true, color=:white)
+    printstyled("Testing package CellArrays.jl\n"; bold=true, color=:white)
     for f in testfiles
         println("")
         if f ∈ excludedfiles
