@@ -8,7 +8,13 @@ https://github.com/omlins/CellArray.jl
 """
 module CellArrays
 
+## Alphabetical include of submodules.
+include("Exceptions.jl")
+using .Exceptions
+
+## Alphabetical include of function/data type definition files
 include("CellArray.jl")
 
+## Exports (need to be after include of submodules if re-exports from them)
 export CellArray, CuCellArray, cellsize
 end
