@@ -7,9 +7,9 @@ struct CellArray{T,N,T_array<:AbstractArray} <: AbstractArray{T,N}
     function CellArray{T,N}(data::T_array, dims::NTuple{N,Int}) where {T,N} where {T_array<:AbstractArray}
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
         T_elem = eltype(T)  # Note: eltype must be defined for type T (as it is e.g. for StaticArrays)
-        if (eltype(data) != T_elem)                     error("eltype(data) must match eltype(T).") end
-        if (ndims(data) != 2)                           error("ndims(data) must be 2.") end
-        if (size(data) != (prod(dims), prod(celldims))) error("size(data) must match (prod(dims), prod(size(T))).") end
+        if (eltype(data) != T_elem)                     @IncoherentArgumentError("eltype(data) must match eltype(T).") end
+        if (ndims(data) != 2)                           @ArgumentError("ndims(data) must be 2.") end
+        if (size(data) != (prod(dims), prod(celldims))) @IncoherentArgumentError("size(data) must match (prod(dims), prod(size(T))).") end
         new{T,N,T_array}(data, dims)
     end
     function CellArray{T,N}(dims::NTuple{N,Int}, T_array::Type{<:AbstractArray}) where {T,N}
