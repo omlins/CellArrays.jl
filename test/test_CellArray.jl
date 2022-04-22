@@ -8,7 +8,7 @@ test_amdgpu = false
 
 array_types           = ["CPU"]
 ArrayConstructors     = [Array]
-CellArrayConstructors = Any[CellArray]
+CellArrayConstructors = [CellArray]
 if test_cuda
 	cuzeros = CUDA.zeros
 	push!(array_types, "CUDA")
