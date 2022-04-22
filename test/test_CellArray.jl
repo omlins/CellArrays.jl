@@ -4,22 +4,25 @@ using CUDA, AMDGPU, StaticArrays
 import CellArrays: IncoherentArgumentError, ArgumentError
 
 test_cuda = CUDA.functional()
-test_amdgpu = false
+test_amdgpu = false #TODO: to be implemented
 
 array_types           = ["CPU"]
 ArrayConstructors     = [Array]
 CellArrayConstructors = [CellArray]
+allowscalar_functions = Function[(x->return)]
 if test_cuda
 	cuzeros = CUDA.zeros
 	push!(array_types, "CUDA")
 	push!(ArrayConstructors, CuArray)
 	push!(CellArrayConstructors, CuCellArray)
+	push!(allowscalar_functions, CUDA.allowscalar)
 end
 if test_amdgpu
 	roczeros = AMDGPU.zeros
 	push!(array_types, "AMDGPU")
 	push!(ArrayConstructors, ROCArray)
 	push!(CellArrayConstructors, ROCCellArray)
+	push!(allowscalar_functions, AMDGPU.allowscalar) #TODO: to be implemented
 end
 
 struct MyFieldArray{T} <: FieldArray{Tuple{2,2,2,2}, T, 4}
@@ -107,7 +110,7 @@ end
 			@test B.dims         == dims
         end;
     end;
-	@testset "2. functions ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
+	@testset "2. functions ($array_type arrays)" for (array_type, Array, CellArray, allowscalar) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions)
 		dims      = (2,3)
 		celldims  = (3,4)
 		T_Float64 = SMatrix{celldims..., Float64, prod(celldims)}
@@ -138,18 +141,34 @@ end
 			@test cellsize(F) == size(MyFieldArray)
         end;
 		@testset "getindex / setindex!" begin
-			A[2,3] = 9
-			B[2,3] = 9.0
-			C[2,3] = T_Float64(1:length(T_Float64))
-			D[2,3] = T_Int32(1:length(T_Int32))
-			E[2,3] = T2_Float64(1:length(T2_Float64))
-			F[2,3] = T2_Int32(1:length(T2_Int32))
-			@test A[2,3] == 9.0
-			@test B[2,3] == 9
-			@test C[2,3] == T_Float64(1:length(T_Float64))
-			@test D[2,3] == T_Int32(1:length(T_Int32))
-			@test E[2,3] == T2_Float64(1:length(T2_Float64))
-			@test F[2,3] == T2_Int32(1:length(T2_Int32))
+			allowscalar() do
+				A[2,2:3] .= 9
+				B[2,2:3] .= 9.0
+				C[2,2:3] .= (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64)))
+				D[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
+				E[2,2:3] .= (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64)))
+				F[2,2:3] .= (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32)))
+				@test all(A[2,2:3] .== 9.0)
+				@test all(B[2,2:3] .== 9)
+				@test all(C[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
+				@test all(D[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
+				@test all(E[2,2:3] .== (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64))))
+				@test all(F[2,2:3] .== (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32))))
+			end
+        end;
+		@testset "similar" begin
+			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), Array}
+			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
+			@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
+			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
+			@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
+			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
+			@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, Array}
         end;
     end;
 	@testset "3. Exceptions ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
