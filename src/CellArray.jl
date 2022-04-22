@@ -48,6 +48,10 @@ ROCCellArray(::Type{T}, dims::Int...) where {T<:Cell}                        = (
 @inline Base.setindex!(A::CellArray{T}, x::Number, i::Int) where {T<:Number} = (A.data[i] = x; return)
 @inline Base.setindex!(A::CellArray{T}, X::T, i::Int) where {T}              = (for j=1:length(T) A.data[i,j] = X[j] end; return)
 
+@inline function Base.similar(A::CellArray{T0,N0,T_array}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,T_array,T<:Cell,N} 
+    CellArray{T,N}(dims, T_array)
+end
+
 @inline cellsize(A::AbstractArray)                                           = size(eltype(A))
 @inline cellsize(A::AbstractArray, i::Int)                                   = cellsize(A)[i]
 
