@@ -23,6 +23,9 @@ struct CellArray{T,N,T_array<:AbstractArray} <: AbstractArray{T,N}
     end
 end
 
+CuCellArray{T,N}  = CellArray{T,N,CuArray}
+ROCCellArray{T,N} = CellArray{T,N,ROCArray}
+
 CellArray(::Type{T}, dims::NTuple{N,Int}) where {T,N}                   = CellArray{T,N}(dims, Array)
 CellArray(::Type{T}, dims::Int...) where {T}                            = CellArray(T, dims)
 CuCellArray(::Type{T}, dims::NTuple{N,Int}) where {T,N}                 = CellArray{T,N}(dims, CuArray)
