@@ -56,8 +56,8 @@ end
 			dims = (2,3)
 			A = CellArray(Float64, dims)
 			B = CellArray(Int32, dims...)
-			C = CellArray(Float64, dims, blocklength=1)
-			D = CellArray(Int32, dims, blocklength=4)
+			C = CellArray(Float64, dims, 1)
+			D = CellArray(Int32, dims, 4)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -77,15 +77,15 @@ end
 			@test length(A.data) == prod(dims)
 			@test length(B.data) == prod(dims)
 			@test length(C.data) == prod(dims)
-			@test length(D.data) == prod(dims)
+			@test (length(D.data) > prod(dims) && length(D.data)%prod(dims) <= 4)
 			@test A.dims         == dims
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
-			@test A.blocklength  == prod(dims)
-			@test B.blocklength  == prod(dims)
-			@test C.blocklength  == 1
-			@test D.blocklength  == 4
+			@test A.blocklen     == prod(dims)
+			@test B.blocklen     == prod(dims)
+			@test C.blocklen     == 1
+			@test D.blocklen     == 4
         end;
 		@testset "SArray cells" begin
 			dims      = (2,3)
@@ -94,8 +94,8 @@ end
 			T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
 			A = CellArray(T_Float64, dims)
 			B = CellArray(T_Int32, dims...)
-			C = CellArray(T_Float64, dims, blocklength=1)
-			D = CellArray(T_Int32, dims, blocklength=4)
+			C = CellArray(T_Float64, dims, 1)
+			D = CellArray(T_Int32, dims, 4)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -115,15 +115,15 @@ end
 			@test length(A.data) == prod(dims)*prod(celldims)
 			@test length(B.data) == prod(dims)*prod(celldims)
 			@test length(C.data) == prod(dims)*prod(celldims)
-			@test length(D.data) == prod(dims)*prod(celldims)
+			@test ((length(D.data) > prod(dims)*prod(celldims)) && (length(D.data)%prod(dims) <= 4))
 			@test A.dims         == dims
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
-			@test A.blocklength  == prod(dims)
-			@test B.blocklength  == prod(dims)
-			@test C.blocklength  == 1
-			@test D.blocklength  == 4
+			@test A.blocklen     == prod(dims)
+			@test B.blocklen     == prod(dims)
+			@test C.blocklen     == 1
+			@test D.blocklen     == 4
         end;
 		@testset "FieldArray cells" begin
 			dims      = (2,3)
@@ -132,8 +132,8 @@ end
 			T_Int32   = MyFieldArray{Int32}
 			A = CellArray(T_Float64, dims)
 			B = CellArray(T_Int32, dims...)
-			C = CellArray(T_Float64, dims, blocklength=1)
-			D = CellArray(T_Int32, dims, blocklength=4)
+			C = CellArray(T_Float64, dims, 1)
+			D = CellArray(T_Int32, dims, 4)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -153,15 +153,15 @@ end
 			@test length(A.data) == prod(dims)*prod(celldims)
 			@test length(B.data) == prod(dims)*prod(celldims)
 			@test length(C.data) == prod(dims)*prod(celldims)
-			@test length(D.data) == prod(dims)*prod(celldims)
+			@test ((length(D.data) > prod(dims)*prod(celldims)) && (length(D.data)%prod(dims) <= 4))
 			@test A.dims         == dims
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
-			@test A.blocklength  == prod(dims)
-			@test B.blocklength  == prod(dims)
-			@test C.blocklength  == 1
-			@test D.blocklength  == 4
+			@test A.blocklen     == prod(dims)
+			@test B.blocklen     == prod(dims)
+			@test C.blocklen     == 1
+			@test D.blocklen     == 4
         end;
     end;
 	@testset "2. functions ($array_type arrays)" for (array_type, Array, CellArray, allowscalar) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions)
@@ -177,8 +177,8 @@ end
 		D = CellArray(T_Int32, dims)
 		E = CellArray(T2_Float64, dims)
 		F = CellArray(T2_Int32, dims)
-		G = CellArray(T_Float64, dims, blocklength=1)
-		H = CellArray(T_Int32, dims, blocklength=4)
+		G = CellArray(T_Float64, dims, 1)
+		H = CellArray(T_Int32, dims, 4)
 		A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
         @testset "size" begin
 			@test size(A) == dims
@@ -262,8 +262,8 @@ end
 		D = CellArray(T_Int32, dims)
 		E = CellArray(T2_Float64, dims)
 		F = CellArray(T2_Int32, dims)
-		G = CellArray(T_Float64, dims, blocklength=1)
-		H = CellArray(T_Int32, dims, blocklength=4)
+		G = CellArray(T_Float64, dims, 1)
+		H = CellArray(T_Int32, dims, 4)
 		@test_throws MethodError CellArray(Array, dims)                                                                       # Error: MethodError (celltype T is restricted to `Cell` in the package)
 		@test_throws MethodError CellArray(MMatrix{celldims..., Float64, prod(celldims)}, dims)                               # ...
 		@test_throws ArgumentError CellArray(MyMutableFieldArray, dims)                                                       # Error: the celltype, `T`, must be a bitstype.
@@ -278,7 +278,7 @@ end
 		@test_throws ArgumentError CellArrays.CellArray{Float64,2}(A.data[:], A.dims)                                         # Error: ndims(data) must be 3.
 		@test_throws ArgumentError CellArrays.CellArray{T_Float64,2}(C.data[:], C.dims)                                       # Error: ...
 		@test_throws ArgumentError CellArrays.CellArray{T2_Float64,2}(E.data[:], E.dims)                                      # Error: ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2}(similar(A.data, Float64, (1,2)), A.dims)         # Error: size(data) must match (blocklength, prod(size(T)), ceil(prod(dims)/blocklength)).
+		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2}(similar(A.data, Float64, (1,2)), A.dims)         # Error: size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2}(similar(C.data, Float64, (1,2)), C.dims)       # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float64,2}(similar(E.data, Float64, (1,2)), E.dims)      # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{SMatrix{(4,5)..., Float64, prod((4,5))},2}(C.data, C.dims)  # ...
