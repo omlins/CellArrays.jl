@@ -161,14 +161,14 @@ end
 		T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float64 = MyFieldArray{Float64}
 		T2_Int32   = MyFieldArray{Int32}
-		A = CuCellArray{Float64,prod(dims)}(dims)
-		B = CuCellArray{Int32,prod(dims)}(dims)
-		C = CuCellArray{T_Float64,prod(dims)}(dims)
-		D = CuCellArray{T_Int32,prod(dims)}(dims)
-		E = CuCellArray{T2_Float64,prod(dims)}(dims)
-		F = CuCellArray{T2_Int32,prod(dims)}(dims)
-		G = CuCellArray{T_Float64,1}(dims)
-		H = CuCellArray{T_Int32,4}(dims)
+		A = CellArray{Float64,prod(dims)}(dims)
+		B = CellArray{Int32,prod(dims)}(dims)
+		C = CellArray{T_Float64,prod(dims)}(dims)
+		D = CellArray{T_Int32,prod(dims)}(dims)
+		E = CellArray{T2_Float64,prod(dims)}(dims)
+		F = CellArray{T2_Int32,prod(dims)}(dims)
+		G = CellArray{T_Float64,1}(dims)
+		H = CellArray{T_Int32,4}(dims)
 		A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
         @testset "size" begin
 			@test size(A) == dims
@@ -200,7 +200,7 @@ end
 			@test blocklength(G) == 1
 			@test blocklength(H) == 4
         end;
-		@testset "getindex / setindex! (array programming)" begin
+		@testset "getindex / setindex!" begin
 			allowscalar() do
 				A[2,2:3] .= 9
 				B[2,2:3] .= 9.0
@@ -219,23 +219,6 @@ end
 				@test all(G[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
 				@test all(H[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
 			end
-		end;
-		@testset "getindex / setindex! (kernel programming)" begin
-			function add2D!(A, B)
-			    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
-			    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
-			    #A[ix,iy] = A[ix,iy] + B[ix,iy];
-				A[ix] = A[ix] + B[ix];
-			    return
-			end
-			function matsquare2D!(A)
-			    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
-			    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
-			    A[ix,iy] = A[ix,iy] * A[ix,iy];
-			    return
-			end
-			C.data.=2; G.data.=3; @cuda blocks=size(C) add2D!(C, G); synchronize(); @test all(C.data .== 5)
-			H.data.=3; @cuda blocks=size(C) matsquare2D!(H); synchronize(); @test all(H.data .== 27)
         end;
 		@testset "similar" begin
 			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(A), Array}
