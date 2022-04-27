@@ -16,5 +16,5 @@ using .Exceptions
 include("CellArray.jl")
 
 ## Exports (need to be after include of submodules if re-exports from them)
-export CellArray, CuCellArray, cellsize
+export CellArray, CPUCellArray, CuCellArray, ROCCellArray, cellsize, blocklength
 end
