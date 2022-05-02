@@ -1,72 +1,117 @@
 using StaticArrays, Adapt, CUDA, AMDGPU
 
-Cell = Union{Number, SArray, FieldArray}
 
-struct CellArray{T<:Cell,N,B,T_array<:AbstractArray} <: AbstractArray{T,N}
+## Constants
+
+const N_DATA = 3
+const Cell   = Union{Number, SArray, FieldArray
+
+
+## Types and constructors
+
+struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,3} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
 
-    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray}
+    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem}
         check_T(T)
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        T_elem = eltype(T)  # Note: eltype must be defined for type T (as it is e.g. for StaticArrays)
-        if (eltype(data) != T_elem)                     @IncoherentArgumentError("eltype(data) must match eltype(T).") end
-        if (ndims(data) != 3)                           @ArgumentError("ndims(data) must be 3.") end
+        if (eltype(data) != eltype(T))                                 @IncoherentArgumentError("eltype(data) must match eltype(T).") end
+        if (ndims(data) != 3)                                          @ArgumentError("ndims(data) must be 3.") end
         if (size(data) != (B, prod(celldims), ceil(Int,prod(dims)/B))) @IncoherentArgumentError("size(data) must match (B, prod(size(T), ceil(prod(dims)/B)).") end
         new{T,N,B,T_array}(data, dims)
     end
-    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray}
+
+    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem}
         CellArray{T,N,B,T_array}(data, dims)
     end
-    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray}
+
+    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
         check_T(T)
+        if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        T_elem = eltype(T)  # Note: eltype must be defined for type T (as it is e.g. for StaticArrays)
-        data = T_array{T_elem,3}(undef, B, prod(celldims), ceil(Int,prod(dims)/B))
+        data = T_array(undef, B, prod(celldims), ceil(Int,prod(dims)/B))
         CellArray{T,N,B,T_array}(data, dims)
     end
-    function CellArray{T,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray}
-        CellArray{T,N,B,T_array}(dims)
+
+    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B,T_array}(T_array, dims)
+    end
+
+    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B,T_array}(T_array, dims)
+    end
+
+    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B}(T_array, dims)
+    end
+
+    function CellArray{T,N,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,B}(T_arraykind{eltype(T),3}, dims)
+    end
+
+    function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,B}(T_arraykind{eltype(T),3}, dims)
     end
 end
 
-CPUCellArray{T,N,B} = CellArray{T,N,B,Array}
- CuCellArray{T,N,B} = CellArray{T,N,B,CuArray}
-ROCCellArray{T,N,B} = CellArray{T,N,B,ROCArray}
+CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,3}}
+ CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,3}}
+ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,3}}
 
-CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B}(dims))
- CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B}(dims))
-ROCCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B}(dims))
+CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(dims))
+ CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(dims))
+ROCCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B,eltype(T)}(dims))
 
-CPUCellArray{T,B}(dims::Int...) where {T<:Cell,B} = (check_T(T); CPUCellArray{T,B}(dims))
- CuCellArray{T,B}(dims::Int...) where {T<:Cell,B} = (check_T(T); CuCellArray{T,B}(dims))
-ROCCellArray{T,B}(dims::Int...) where {T<:Cell,B} = (check_T(T); ROCCellArray{T,B}(dims))
+CPUCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(dims)
+ CuCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(dims)
+ROCCellArray{T,B}(dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(dims)
 
-CPUCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = (check_T(T); CPUCellArray{T,N,prod(dims)}(dims))
- CuCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = (check_T(T); CuCellArray{T,N,prod(dims)}(dims))
-ROCCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = (check_T(T); ROCCellArray{T,N,prod(dims)}(dims))
+CPUCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,prod(dims)}(dims)
+ CuCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,prod(dims)}(dims)
+ROCCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,prod(dims)}(dims)
 
-CPUCellArray{T}(dims::Int...) where {T<:Cell} = (check_T(T); CPUCellArray{T}(dims))
- CuCellArray{T}(dims::Int...) where {T<:Cell} = (check_T(T); CuCellArray{T}(dims))
-ROCCellArray{T}(dims::Int...) where {T<:Cell} = (check_T(T); ROCCellArray{T}(dims))
+CPUCellArray{T}(dims::Int...) where {T<:Cell} = CPUCellArray{T}(dims)
+ CuCellArray{T}(dims::Int...) where {T<:Cell} = CuCellArray{T}(dims)
+ROCCellArray{T}(dims::Int...) where {T<:Cell} = ROCCellArray{T}(dims)
 
-@inline function Base.similar(A::CellArray{T0,N0,B,T_array}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array,T<:Cell,N}
-    CellArray{T,N,B,T_array}(dims)
+
+## CellArray functions
+
+@inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
+    CPUCellArray{T,N,B,eltype(T)}(dims)
+end
+
+@inline function Base.similar(A::CuCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
+    CuCellArray{T,N,B,eltype(T)}(dims)
+end
+
+@inline function Base.similar(A::ROCCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
+    ROCCellArray{T,N,B,eltype(T)}(dims)
+end
+
+@inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
+    check_T(T)
+    T_arraykind = Base.typename(T_array0).wrapper  # Note: an alternative would be: T_array = typeof(similar(A.data, eltype(T), dims.*0)); CellArray{T,N,B}(T_array, dims)
+    CellArray{T,N,B}(T_arraykind{eltype(T),N_DATA}, dims)
 end
 
 @inline Base.IndexStyle(::Type{<:CellArray})                                         = IndexLinear()
 @inline Base.size(T::Type{<:Number}, args...)                                        = 1
 @inline Base.size(A::CellArray)                                                      = A.dims
-@inline Base.getindex(A::CellArray{T,N,B}, i::Int) where {T <: Number,N,B}           = T(A.data[(i-1)%B+1, 1, (i-1)÷B+1])
-@inline Base.getindex(A::CellArray{T,N,B}, i::Int) where {T,N,B}                     = T(getindex(A.data, (i-1)%B+1, j, (i-1)÷B+1) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
-@inline Base.setindex!(A::CellArray{T,N,B}, x::Number, i::Int) where {T<:Number,N,B} = (A.data[(i-1)%B+1, 1, (i-1)÷B+1] = x; return)
-@inline Base.setindex!(A::CellArray{T,N,B}, X::T, i::Int) where {T,N,B}              = (for j=1:length(T) A.data[(i-1)%B+1, j, (i-1)÷B+1] = X[j] end; return)
+@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}} = T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
+@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}                             = T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+@inline Base.setindex!(A::CellArray{T,N,B,T_array}, x::Number, i::Int) where {T<:Number,N,B,T_array}         = (A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}                      = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j] end; return)
 
 @inline cellsize(A::AbstractArray)                                                   = size(eltype(A))
 @inline cellsize(A::AbstractArray, i::Int)                                           = cellsize(A)[i]
-@inline blocklength(A::CellArray{T,N,B}) where {T,N,B}                               = B
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}               = B
 
-Adapt.adapt_structure(to, A::CellArray{T,N,B}) where {T,N,B}                         = CellArray{T,N,B}(adapt(to, A.data), A.dims)
+Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}         = CellArray{T,N,B}(adapt(to, A.data), A.dims)
+
+
+## Helper functions
 
 function check_T(::Type{T}) where {T}
     if !isbitstype(T) @ArgumentError("the celltype, `T`, must be a bitstype.") end # Note: This test is required as FieldArray can be mutable and thus not bitstype (and ismutable() is for values not types...). The following tests would currently not be required as the current definition of the Cell type implies the tests to succeed.
