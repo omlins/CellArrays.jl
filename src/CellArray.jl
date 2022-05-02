@@ -16,9 +16,10 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,3} where {T_elem}} <:
     function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem}
         check_T(T)
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        if (eltype(data) != eltype(T))                                 @IncoherentArgumentError("eltype(data) must match eltype(T).") end
-        if (ndims(data) != 3)                                          @ArgumentError("ndims(data) must be 3.") end
-        if (size(data) != (B, prod(celldims), ceil(Int,prod(dims)/B))) @IncoherentArgumentError("size(data) must match (B, prod(size(T), ceil(prod(dims)/B)).") end
+        blocklen = (B == 0) ? prod(dims) : B
+        if (eltype(data) != eltype(T))                                               @IncoherentArgumentError("eltype(data) must match eltype(T).") end
+        if (ndims(data) != 3)                                                        @ArgumentError("ndims(data) must be 3.") end
+        if (size(data) != (blocklen, prod(celldims), ceil(Int,prod(dims)/blocklen))) @IncoherentArgumentError("size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).") end
         new{T,N,B,T_array}(data, dims)
     end
 
@@ -30,7 +31,8 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,3} where {T_elem}} <:
         check_T(T)
         if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        data = T_array(undef, B, prod(celldims), ceil(Int,prod(dims)/B))
+        blocklen = (B == 0) ? prod(dims) : B
+        data = T_array(undef, blocklen, prod(celldims), ceil(Int,prod(dims)/blocklen))
         CellArray{T,N,B,T_array}(data, dims)
     end
 
@@ -67,9 +69,9 @@ CPUCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(dims)
  CuCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(dims)
 ROCCellArray{T,B}(dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(dims)
 
-CPUCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,prod(dims)}(dims)
- CuCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,prod(dims)}(dims)
-ROCCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,prod(dims)}(dims)
+CPUCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(dims)
+ CuCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,0}(dims)
+ROCCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,0}(dims)
 
 CPUCellArray{T}(dims::Int...) where {T<:Cell} = CPUCellArray{T}(dims)
  CuCellArray{T}(dims::Int...) where {T<:Cell} = CuCellArray{T}(dims)
@@ -96,19 +98,30 @@ end
     CellArray{T,N,B}(T_arraykind{eltype(T),N_DATA}, dims)
 end
 
-@inline Base.IndexStyle(::Type{<:CellArray})                                         = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                        = 1
-@inline Base.size(A::CellArray)                                                      = A.dims
-@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}} = T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
-@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}                             = T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
-@inline Base.setindex!(A::CellArray{T,N,B,T_array}, x::Number, i::Int) where {T<:Number,N,B,T_array}         = (A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)] = x; return)
-@inline Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}                      = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j] end; return)
+@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}}      = T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
+@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}        = T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+@inline Base.setindex!(A::CellArray{T,N,B,T_array}, x::Number, i::Int) where {T<:Number,N,B,T_array}              = (A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array} = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j] end; return)
 
-@inline cellsize(A::AbstractArray)                                                   = size(eltype(A))
-@inline cellsize(A::AbstractArray, i::Int)                                           = cellsize(A)[i]
-@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}               = B
+@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}}        = T(A.data[i])
+@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}          = T(getindex(A.data, Base._to_linear_index(A.data::T_array, i, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+@inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}                = (A.data[i] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}   = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, i, j, 1)] = X[j] end; return)
 
-Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}         = CellArray{T,N,B}(adapt(to, A.data), A.dims)
+@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}}        = T(A.data[i])
+@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}          = T(getindex(A.data, Base._to_linear_index(A.data::T_array, 1, j, i)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+@inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}                = (A.data[i] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,1,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}   = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, 1, j, i)] = X[j] end; return)
+
+@inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
+@inline Base.size(T::Type{<:Number}, args...)                                = 1
+@inline Base.size(A::CellArray)                                              = A.dims
+
+@inline cellsize(A::AbstractArray)                                           = size(eltype(A))
+@inline cellsize(A::AbstractArray, i::Int)                                   = cellsize(A)[i]
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}       = (B == 0) ? prod(dims) : B
+
+Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
 
 
 ## Helper functions
