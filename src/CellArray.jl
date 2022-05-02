@@ -4,7 +4,7 @@ using StaticArrays, Adapt, CUDA, AMDGPU
 ## Constants
 
 const N_DATA = 3
-const Cell   = Union{Number, SArray, FieldArray
+const Cell   = Union{Number, SArray, FieldArray}
 
 
 ## Types and constructors
