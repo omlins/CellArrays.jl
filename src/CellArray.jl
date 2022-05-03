@@ -3,31 +3,31 @@ using StaticArrays, Adapt, CUDA, AMDGPU
 
 ## Constants
 
-const N_DATA = 3
+const _N = 3
 const Cell   = Union{Number, SArray, FieldArray}
 
 
 ## Types and constructors
 
-struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,3} where {T_elem}} <: AbstractArray{T,N}
+struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
 
-    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem}
+    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         check_T(T)
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
         blocklen = (B == 0) ? prod(dims) : B
         if (eltype(data) != eltype(T))                                               @IncoherentArgumentError("eltype(data) must match eltype(T).") end
-        if (ndims(data) != 3)                                                        @ArgumentError("ndims(data) must be 3.") end
+        if (ndims(data) != _N)                                                       @ArgumentError("ndims(data) must be $_N.") end
         if (size(data) != (blocklen, prod(celldims), ceil(Int,prod(dims)/blocklen))) @IncoherentArgumentError("size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).") end
         new{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem}
+    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         check_T(T)
         if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
@@ -36,30 +36,30 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,3} where {T_elem}} <:
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B,T_array}(T_array, dims)
     end
 
-    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B,T_array}(T_array, dims)
     end
 
-    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,3}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B}(T_array, dims)
     end
 
     function CellArray{T,N,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,N,B}(T_arraykind{eltype(T),3}, dims)
+        CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
     end
 
     function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,N,B}(T_arraykind{eltype(T),3}, dims)
+        CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
     end
 end
 
-CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,3}}
- CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,3}}
-ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,3}}
+CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
+ CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
+ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
 
 CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(dims))
  CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(dims))
@@ -95,11 +95,11 @@ end
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
     check_T(T)
     T_arraykind = Base.typename(T_array0).wrapper  # Note: an alternative would be: T_array = typeof(similar(A.data, eltype(T), dims.*0)); CellArray{T,N,B}(T_array, dims)
-    CellArray{T,N,B}(T_arraykind{eltype(T),N_DATA}, dims)
+    CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
 end
 
 
-@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}}
+@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,_N}}
     T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
 end
 
@@ -120,7 +120,7 @@ end
 end
 
 
-@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}} = T(A.data[i])
+@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
 @inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
 
 @inline function Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
@@ -135,7 +135,7 @@ end
 end
 
 
-@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}} = T(A.data[i])
+@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
 @inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
 
 @inline function Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
