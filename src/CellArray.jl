@@ -98,20 +98,57 @@ end
     CellArray{T,N,B}(T_arraykind{eltype(T),N_DATA}, dims)
 end
 
-@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}}      = T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
-@inline Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}        = T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
-@inline Base.setindex!(A::CellArray{T,N,B,T_array}, x::Number, i::Int) where {T<:Number,N,B,T_array}              = (A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)] = x; return)
-@inline Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array} = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j] end; return)
 
-@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}}        = T(A.data[i])
-@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}          = T(getindex(A.data, Base._to_linear_index(A.data::T_array, i, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
-@inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}                = (A.data[i] = x; return)
-@inline Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}   = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, i, j, 1)] = X[j] end; return)
+@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Number,N,B,T_array<:AbstractArray{T,3}}
+    T(A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)])
+end
 
-@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}}        = T(A.data[i])
-@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}          = T(getindex(A.data, Base._to_linear_index(A.data::T_array, 1, j, i)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
-@inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}                = (A.data[i] = x; return)
-@inline Base.setindex!(A::CellArray{T,N,1,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}   = (for j=1:length(T) A.data[Base._to_linear_index(A.data::T_array, 1, j, i)] = X[j] end; return)
+@inline function Base.setindex!(A::CellArray{T,N,B,T_array}, x::Number, i::Int) where {T<:Number,N,B,T_array}
+    A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, 1, (i-1)÷B+1)] = x
+    return
+end
+
+@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}
+    T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+end
+
+@inline function Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}
+    for j=1:length(T)
+        A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j]
+    end
+    return
+end
+
+
+@inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}} = T(A.data[i])
+@inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
+
+@inline function Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+    T(getindex(A.data, Base._to_linear_index(A.data::T_array, i, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+end
+
+@inline function Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+    for j=1:length(T)
+        A.data[Base._to_linear_index(A.data::T_array, i, j, 1)] = X[j]
+    end
+    return
+end
+
+
+@inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,3}} = T(A.data[i])
+@inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
+
+@inline function Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+    T(getindex(A.data, Base._to_linear_index(A.data::T_array, 1, j, i)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+end
+
+@inline function Base.setindex!(A::CellArray{T,N,1,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+    for j=1:length(T)
+        A.data[Base._to_linear_index(A.data::T_array, 1, j, i)] = X[j]
+    end
+    return
+end
+
 
 @inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
 @inline Base.size(T::Type{<:Number}, args...)                                = 1
