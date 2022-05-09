@@ -224,7 +224,7 @@ Return a tuple containing the dimensions of `A` or return only a specific dimens
 Return the blocklength of CellArray `A`.
 
 """
-@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(dims) : B
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(A.dims) : B
 
 
 ## Helper functions
