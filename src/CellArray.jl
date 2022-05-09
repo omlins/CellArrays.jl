@@ -4,11 +4,36 @@ using StaticArrays, Adapt, CUDA, AMDGPU
 ## Constants
 
 const _N = 3
-const Cell   = Union{Number, SArray, FieldArray}
+const Cell = Union{Number, SArray, FieldArray}
 
 
 ## Types and constructors
+"""
+    CellArray{T<:Cell,N,B,T_array} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
+`N`-dimensional array with elements of type `T`, where the `T` are `Cells` of type Number, SArray or FieldArray.
+
+--------------------------------------------------------------------------------
+
+    CellArray{T,N,B}(T_arraykind, dims)
+    CellArray{T,B}(T_arraykind, dims)
+    CellArray{T}(T_arraykind, dims)
+
+Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `T_arraykind`.
+
+--------------------------------------------------------------------------------
+
+CPUCellArray{T,B}(dims)
+CPUCellArray{T,B}(dims)
+CPUCellArray{T}(dims)
+CuCellArray{T,B}(dims)
+CuCellArray{T}(dims)
+ROCCellArray{T,B}(dims)
+ROCCellArray{T}(dims)
+
+Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `Array`, `CuArray` or `ROCArray` depending on the constructor chosen (`CPUCellArray` or `CuCellArray` or `ROCCellArray`) .
+
+"""
 struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
@@ -54,6 +79,10 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
 
     function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
         CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
+    end
+
+    function CellArray{T}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,0}(T_arraykind{eltype(T),_N}, dims)
     end
 end
 
