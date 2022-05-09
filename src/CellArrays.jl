@@ -16,7 +16,7 @@ https://github.com/omlins/CellArray.jl
 - [`cellsize`](@ref)
 - [`blocklength`](@ref)
 
-To see a description of a function type `?<functionname>`.
+To see a description of a constructor or function type `?<functionname>`.
 
 !!! note "Performance note"
     If a CellArray's cells contain more than what fits into registers, the performance on Nvidia GPUs will deviate from the optimal, if access is not performed by accessing the cells' values individually to reduce register pressure.
