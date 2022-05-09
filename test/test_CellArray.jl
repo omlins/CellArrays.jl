@@ -56,8 +56,8 @@ end
     @testset "1. CellArray allocation ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
         @testset "Number cells" begin
 			dims = (2,3)
-			A = CellArray{Float64,prod(dims)}(dims)
-			B = CellArray{Int32,prod(dims)}(dims...)
+			A = CellArray{Float64}(dims)
+			B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims...)
 			C = CellArray{Float64,1}(dims)
 			D = CellArray{Int32,4}(dims)
 			@test typeof(A.data) <: Array
@@ -72,7 +72,7 @@ end
 			@test eltype(B)      == Int32
 			@test eltype(C)      == Float64
 			@test eltype(D)      == Int32
-			@test typeof(A)      == CellArrays.CellArray{Float64, length(dims), prod(dims), Array{eltype(A.data),_N}}
+			@test typeof(A)      == CellArrays.CellArray{Float64, length(dims), 0, Array{eltype(A.data),_N}}
 			@test typeof(B)      == CellArrays.CellArray{Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
 			@test typeof(C)      == CellArrays.CellArray{Float64, length(dims), 1, Array{eltype(C.data),_N}}
 			@test typeof(D)      == CellArrays.CellArray{Int32, length(dims), 4, Array{eltype(D.data),_N}}
@@ -90,8 +90,8 @@ end
 			celldims  = (3,4)
 			T_Float64 = SMatrix{celldims..., Float64, prod(celldims)}
 			T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
-			A = CellArray{T_Float64,prod(dims)}(dims)
-			B = CellArray{T_Int32,prod(dims)}(dims...)
+			A = CellArray{T_Float64}(dims)
+			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, dims...)
 			C = CellArray{T_Float64,1}(dims)
 			D = CellArray{T_Int32,4}(dims)
 			@test typeof(A.data) <: Array
@@ -106,7 +106,7 @@ end
 			@test eltype(B)      == T_Int32
 			@test eltype(C)      == T_Float64
 			@test eltype(D)      == T_Int32
-			@test typeof(A)      == CellArrays.CellArray{T_Float64, length(dims), prod(dims), Array{eltype(A.data),_N}}
+			@test typeof(A)      == CellArrays.CellArray{T_Float64, length(dims), 0, Array{eltype(A.data),_N}}
 			@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
 			@test typeof(C)      == CellArrays.CellArray{T_Float64, length(dims), 1, Array{eltype(C.data),_N}}
 			@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
@@ -124,8 +124,8 @@ end
 			celldims  = size(MyFieldArray)
 			T_Float64 = MyFieldArray{Float64}
 			T_Int32   = MyFieldArray{Int32}
-			A = CellArray{T_Float64,prod(dims)}(dims)
-			B = CellArray{T_Int32,prod(dims)}(dims...)
+			A = CellArray{T_Float64}(dims)
+			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, dims...)
 			C = CellArray{T_Float64,1}(dims)
 			D = CellArray{T_Int32,4}(dims)
 			@test typeof(A.data) <: Array
@@ -140,7 +140,7 @@ end
 			@test eltype(B)      == T_Int32
 			@test eltype(C)      == T_Float64
 			@test eltype(D)      == T_Int32
-			@test typeof(A)      == CellArrays.CellArray{T_Float64, length(dims), prod(dims), Array{eltype(A.data),_N}}
+			@test typeof(A)      == CellArrays.CellArray{T_Float64, length(dims), 0, Array{eltype(A.data),_N}}
 			@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
 			@test typeof(C)      == CellArrays.CellArray{T_Float64, length(dims), 1, Array{eltype(C.data),_N}}
 			@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
@@ -161,11 +161,11 @@ end
 		T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float64 = MyFieldArray{Float64}
 		T2_Int32   = MyFieldArray{Int32}
-		A = CellArray{Float64,prod(dims)}(dims)
-		B = CellArray{Int32,prod(dims)}(dims)
-		C = CellArray{T_Float64,prod(dims)}(dims)
+		A = CellArray{Float64}(dims)
+		B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims)
+		C = CellArray{T_Float64}(dims)
 		D = CellArray{T_Int32,prod(dims)}(dims)
-		E = CellArray{T2_Float64,prod(dims)}(dims)
+		E = CellArray{T2_Float64}(dims)
 		F = CellArray{T2_Int32,prod(dims)}(dims)
 		G = CellArray{T_Float64,1}(dims)
 		H = CellArray{T_Int32,4}(dims)
@@ -244,19 +244,19 @@ end
 			end
         end;
 		@testset "similar" begin
-			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(A), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(C), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(E), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N}}
 			@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N}}
 			@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(A), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(C), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(E), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
 			@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N}}
 			@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N}}
 			@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
@@ -269,31 +269,31 @@ end
 		T_Int32    = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float64 = MyFieldArray{Float64}
 		T2_Int32   = MyFieldArray{Int32}
-		A = CellArray{Float64,prod(dims)}(dims)
-		B = CellArray{Int32,prod(dims)}(dims)
-		C = CellArray{T_Float64,prod(dims)}(dims)
+		A = CellArray{Float64}(dims)
+		B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims)
+		C = CellArray{T_Float64}(dims)
 		D = CellArray{T_Int32,prod(dims)}(dims)
-		E = CellArray{T2_Float64,prod(dims)}(dims)
+		E = CellArray{T2_Float64}(dims)
 		F = CellArray{T2_Int32,prod(dims)}(dims)
 		G = CellArray{T_Float64,1}(dims)
 		H = CellArray{T_Int32,4}(dims)
-		@test_throws TypeError CellArray{Array}(dims)                                                                                    # Error: TypeError (celltype T is restricted to `Cell` in the package)
-		@test_throws TypeError CellArray{MMatrix{celldims..., Float64, prod(celldims)}}(dims)                                            # ...
-		@test_throws ArgumentError CellArray{MyMutableFieldArray}(dims)                                                                  # Error: the celltype, `T`, must be a bitstype.
-		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2,prod(dims)}(similar(A.data, Float32), A.dims)                # Error: eltype(data) must match eltype(T).
-		@test_throws IncoherentArgumentError CellArrays.CellArray{Int32,2,prod(dims)}(similar(B.data, Float64), B.dims)                  # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,prod(dims)}(similar(C.data, Float32), C.dims)              # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,prod(dims)}(similar(D.data, T_Int32), D.dims)                # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float64,2,prod(dims)}(similar(E.data, Float32), E.dims)             # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Int32,2,prod(dims)}(similar(F.data, T2_Int32), F.dims)              # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,1}(similar(G.data, Float32), G.dims)                       # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,4}(similar(H.data, T_Int32), H.dims)                         # ...
-		@test_throws MethodError CellArrays.CellArray{Float64,2,prod(dims)}(A.data[:], A.dims)                                           # Error: ndims(data) must be 3.
-		@test_throws MethodError CellArrays.CellArray{T_Float64,2,prod(dims)}(C.data[:], C.dims)                                         # Error: ...
-		@test_throws MethodError CellArrays.CellArray{T2_Float64,2,prod(dims)}(E.data[:], E.dims)                                        # Error: ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2,prod(dims)}(similar(A.data, Float64, (1,2,1)), A.dims)       # Error: size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,prod(dims)}(similar(C.data, Float64, (1,2,1)), C.dims)     # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float64,2,prod(dims)}(similar(E.data, Float64, (1,2,1)), E.dims)    # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{SMatrix{(4,5)..., Float64, prod((4,5))},2,prod(dims)}(C.data, C.dims)  # ...
+		@test_throws TypeError CellArray{Array}(dims)                                                                           # Error: TypeError (celltype T is restricted to `Cell` in the package)
+		@test_throws TypeError CellArray{MMatrix{celldims..., Float64, prod(celldims)}}(dims)                                   # ...
+		@test_throws ArgumentError CellArray{MyMutableFieldArray}(dims)                                                         # Error: the celltype, `T`, must be a bitstype.
+		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2,0}(similar(A.data, Float32), A.dims)                # Error: eltype(data) must match eltype(T).
+		@test_throws IncoherentArgumentError CellArrays.CellArray{Int32,2,prod(dims)}(similar(B.data, Float64), B.dims)         # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,0}(similar(C.data, Float32), C.dims)              # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,prod(dims)}(similar(D.data, T_Int32), D.dims)       # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float64,2,0}(similar(E.data, Float32), E.dims)             # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Int32,2,prod(dims)}(similar(F.data, T2_Int32), F.dims)     # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,1}(similar(G.data, Float32), G.dims)              # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,4}(similar(H.data, T_Int32), H.dims)                # ...
+		@test_throws MethodError CellArrays.CellArray{Float64,2,0}(A.data[:], A.dims)                                           # Error: ndims(data) must be 3.
+		@test_throws MethodError CellArrays.CellArray{T_Float64,2,0}(C.data[:], C.dims)                                         # Error: ...
+		@test_throws MethodError CellArrays.CellArray{T2_Float64,2,0}(E.data[:], E.dims)                                        # Error: ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2,0}(similar(A.data, Float64, (1,2,1)), A.dims)       # Error: size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,0}(similar(C.data, Float64, (1,2,1)), C.dims)     # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float64,2,0}(similar(E.data, Float64, (1,2,1)), E.dims)    # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{SMatrix{(4,5)..., Float64, prod((4,5))},2,0}(C.data, C.dims)  # ...
 	end;
 end;
