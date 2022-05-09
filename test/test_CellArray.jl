@@ -181,8 +181,8 @@ end
 			@test size(H) == dims
         end;
 		@testset "cellsize" begin
-			@test cellsize(A) == 1
-			@test cellsize(B) == 1
+			@test cellsize(A) == (1,)
+			@test cellsize(B) == (1,)
 			@test cellsize(C) == celldims
 			@test cellsize(D) == celldims
 			@test cellsize(E) == size(MyFieldArray)
