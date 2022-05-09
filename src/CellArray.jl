@@ -8,7 +8,8 @@ const Cell = Union{Number, SArray, FieldArray}
 
 
 ## Types and constructors
-"""
+
+const CELLARRAY_DOC = """
     CellArray{T<:Cell,N,B,T_array} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional array with elements of type `T`, where `T` are `Cells` of type Number, SArray or FieldArray. `B` defines the blocklength, which refers to the amount of values of a same `Cell` component that are stored contigously (`B=1` means array of struct like storage; `B=prod(dims)` means array struct of array like storage; `B=0` is an alias for `B=prod(dims)`, enabling better peformance thanks to more specialized dispatch). `T_array` defines the array type used for storage.
@@ -23,17 +24,19 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 --------------------------------------------------------------------------------
 
-CPUCellArray{T,B}(dims)
-CPUCellArray{T,B}(dims)
-CPUCellArray{T}(dims)
-CuCellArray{T,B}(dims)
-CuCellArray{T}(dims)
-ROCCellArray{T,B}(dims)
-ROCCellArray{T}(dims)
+    CPUCellArray{T,B}(dims)
+    CPUCellArray{T}(dims)
+
+    CuCellArray{T,B}(dims)
+    CuCellArray{T}(dims)
+    
+    ROCCellArray{T,B}(dims)
+    ROCCellArray{T}(dims)
 
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `Array`, `CuArray` or `ROCArray` depending on the constructor chosen (`CPUCellArray` or `CuCellArray` or `ROCCellArray`) .
 
 """
+@doc CELLARRAY_DOC
 struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
@@ -86,9 +89,15 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
     end
 end
 
+@doc CELLARRAY_DOC
 CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
- CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
+
+@doc CELLARRAY_DOC
+CuCellArray{T,N,B,T_elem}  = CellArray{T,N,B,CuArray{T_elem,_N}}
+
+@doc CELLARRAY_DOC
 ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
+
 
 CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(dims))
  CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(dims))
@@ -183,11 +192,29 @@ end
 @inline Base.size(T::Type{<:Number}, args...)                                = (1,)
 @inline Base.size(A::CellArray)                                              = A.dims
 
-@inline cellsize(A::AbstractArray)                                           = size(eltype(A))
-@inline cellsize(A::AbstractArray, i::Int)                                   = cellsize(A)[i]
-@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}       = (B == 0) ? prod(dims) : B
-
 Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
+
+
+## API functions
+
+"""
+    cellsize(A)
+    cellsize(A, dim)
+
+Return a tuple containing the dimensions of `A` or return only a specific dimension, specified by `dim`.
+
+"""
+@inline cellsize(A::AbstractArray)           = size(eltype(A))
+@inline cellsize(A::AbstractArray, dim::Int) = cellsize(A)[dim]
+
+
+"""
+    blocklength(A)
+
+Return the blocklength of CellArray `A`.
+
+"""
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(dims) : B
 
 
 ## Helper functions
