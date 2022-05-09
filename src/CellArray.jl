@@ -180,7 +180,7 @@ end
 
 
 @inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                = 1
+@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
 @inline Base.size(A::CellArray)                                              = A.dims
 
 @inline cellsize(A::AbstractArray)                                           = size(eltype(A))
