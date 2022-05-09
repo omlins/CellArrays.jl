@@ -29,12 +29,14 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
     CuCellArray{T,B}(dims)
     CuCellArray{T}(dims)
-    
+
     ROCCellArray{T,B}(dims)
     ROCCellArray{T}(dims)
 
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `Array`, `CuArray` or `ROCArray` depending on the constructor chosen (`CPUCellArray` or `CuCellArray` or `ROCCellArray`) .
 
+!!! note "Performance note"
+    Best performance on GPUs is in general obtained with `B=0` as set by default. `B=1` migth give better performance in certain cases. Other values of `B` do with the current implementation not lead to optimal performance on GPU.
 """
 @doc CELLARRAY_DOC
 struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
