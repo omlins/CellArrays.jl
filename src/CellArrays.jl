@@ -5,6 +5,21 @@ Provides support for an AbstractArray subtype `CellArray`, which represents arra
 
 # General overview and examples
 https://github.com/omlins/CellArray.jl
+
+# Constructors
+- [`CellArray`](@ref)
+- [`CPUCellArray`](@ref)
+- [`CuCellArray`](@ref)
+- [`ROCCellArray`](@ref)
+
+# Functions (additional to standard AbstractArray functionality)
+- [`cellsize`](@ref)
+- [`blocklength`](@ref)
+
+To see a description of a function type `?<functionname>`.
+
+!!! note "Performance note"
+    If a CellArray's cells contain more than what fits into registers, the performance on Nvidia GPUs will deviate from the optimal, if access is not performed by accessing the cells' values individually to reduce register pressure.
 """
 module CellArrays
 
