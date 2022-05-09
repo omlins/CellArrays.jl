@@ -4,110 +4,64 @@ using StaticArrays, Adapt, CUDA, AMDGPU
 ## Constants
 
 const _N = 3
-const Cell = Union{Number, SArray, FieldArray}
+const Cell   = Union{Number, SArray, FieldArray}
 
 
 ## Types and constructors
 
-const CELLARRAY_DOC = """
-    CellArray{T<:Cell,N,B,T_array} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
-
-`N`-dimensional array with elements of type `T`, where `T` are `Cells` of type Number, SArray or FieldArray. `B` defines the blocklength, which refers to the amount of values of a same `Cell` component that are stored contigously (`B=1` means array of struct like storage; `B=prod(dims)` means array struct of array like storage; `B=0` is an alias for `B=prod(dims)`, enabling better peformance thanks to more specialized dispatch). `T_array` defines the array type used for storage.
-
---------------------------------------------------------------------------------
-
-    CellArray{T,N,B}(T_arraykind, dims)
-    CellArray{T,B}(T_arraykind, dims)
-    CellArray{T}(T_arraykind, dims)
-
-Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `T_arraykind`.
-
---------------------------------------------------------------------------------
-
-    CPUCellArray{T,B}(dims)
-    CPUCellArray{T}(dims)
-
-    CuCellArray{T,B}(dims)
-    CuCellArray{T}(dims)
-
-    ROCCellArray{T,B}(dims)
-    ROCCellArray{T}(dims)
-
-Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `Array`, `CuArray` or `ROCArray` depending on the constructor chosen (`CPUCellArray` or `CuCellArray` or `ROCCellArray`) .
-
-!!! note "Performance note"
-    Best performance on GPUs is in general obtained with `B=0` as set by default. `B=1` migth give better performance in certain cases. Other values of `B` do with the current implementation not lead to optimal performance on GPU.
-"""
-@doc CELLARRAY_DOC
 struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
 
-    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
+    function CellArray{T,N,B,T_array}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         check_T(T)
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        blocklen = (B == 0) ? prod(dims) : B
+        _dims = (128, dims[2:end]...)
+        blocklen = (B == 0) ? prod(_dims) : B
         if (eltype(data) != eltype(T))                                               @IncoherentArgumentError("eltype(data) must match eltype(T).") end
         if (ndims(data) != _N)                                                       @ArgumentError("ndims(data) must be $_N.") end
-        if (size(data) != (blocklen, prod(celldims), ceil(Int,prod(dims)/blocklen))) @IncoherentArgumentError("size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).") end
+        if (size(data) != (blocklen, prod(celldims), ceil(Int,prod(_dims)/blocklen))) @IncoherentArgumentError("size(data) must match (blocklen, prod(size(T), ceil(prod(_dims)/blocklen)).") end
         new{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
+    function CellArray{T,N,B}(data::T_array, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         check_T(T)
         if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
-        blocklen = (B == 0) ? prod(dims) : B
-        data = T_array(undef, blocklen, prod(celldims), ceil(Int,prod(dims)/blocklen))
+        _dims = (128, dims[2:end]...)
+        blocklen = (B == 0) ? prod(_dims) : B
+        data = T_array(undef, blocklen, prod(celldims), ceil(Int,prod(_dims)/blocklen))
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B,T_array}(T_array, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B,T_array}(T_array, dims)
     end
 
-    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         CellArray{T,N,B}(T_array, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T,N,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
         CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
     end
 
-    function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,N,B}(T_arraykind, dims)
-    end
-
-    function CellArray{T,B}(::Type{T_arraykind}, dims::Int...) where {T<:Cell,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,B}(T_arraykind, dims)
-    end
-
-    function CellArray{T}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,0}(T_arraykind, dims)
-    end
-
-    function CellArray{T}(::Type{T_arraykind}, dims::Int...) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T}(T_arraykind, dims)
+    function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell, N, B, T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
     end
 end
 
-@doc CELLARRAY_DOC
 CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
-
-@doc CELLARRAY_DOC
-CuCellArray{T,N,B,T_elem}  = CellArray{T,N,B,CuArray{T_elem,_N}}
-
-@doc CELLARRAY_DOC
+ CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
 ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
-
 
 CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(dims))
  CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(dims))
@@ -168,23 +122,27 @@ end
 end
 
 
+#TODO: here I am: this PoC with PS/examples/memcopyArrayOfArray3D_bup_postponed_padding_demo.jl (nx=125) gives 537 GB/s while without padding we get 506 GB/s (also for nx=125)
+#      now here both 125 and 3 are hardcoded. ÷125 would absolutely need to be parametrized (i.e. 1st dim as param) in order to get theoretically good perf ("A modulo operation with a compile-time constant divisor will be heavily optimized by the compiler using well-known techniques that have been around for 20+ years" https://forums.developer.nvidia.com/t/speed-of-modulo-operator-in-cuda/81672)
+#      it seems though that these things are only efficient if int32 is used. So, we postpone it. First we want to have int32 support before doing this and more complex blocking.
+
 @inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
-@inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}          = (A.data[i] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
 
 @inline function Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
-    T(getindex(A.data, Base._to_linear_index(A.data::T_array, i, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
+    T(getindex(A.data, Base._to_linear_index(A.data::T_array, i + ((i-1)÷125)*3, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
 end
 
 @inline function Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
     for j=1:length(T)
-        A.data[Base._to_linear_index(A.data::T_array, i, j, 1)] = X[j]
+        A.data[Base._to_linear_index(A.data::T_array, i + ((i-1)÷125)*3, j, 1)] = X[j]
     end
     return
 end
 
 
 @inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
-@inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}          = (A.data[i] = x; return)
+@inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}         = (A.data[i] = x; return)
 
 @inline function Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
     T(getindex(A.data, Base._to_linear_index(A.data::T_array, 1, j, i)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
@@ -199,32 +157,14 @@ end
 
 
 @inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
+@inline Base.size(T::Type{<:Number}, args...)                                = 1
 @inline Base.size(A::CellArray)                                              = A.dims
 
+@inline cellsize(A::AbstractArray)                                           = size(eltype(A))
+@inline cellsize(A::AbstractArray, i::Int)                                   = cellsize(A)[i]
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array}       = (B == 0) ? prod(dims) : B
+
 Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
-
-
-## API functions
-
-"""
-    cellsize(A)
-    cellsize(A, dim)
-
-Return a tuple containing the dimensions of `A` or return only a specific dimension, specified by `dim`.
-
-"""
-@inline cellsize(A::AbstractArray)           = size(eltype(A))
-@inline cellsize(A::AbstractArray, dim::Int) = cellsize(A)[dim]
-
-
-"""
-    blocklength(A)
-
-Return the blocklength of CellArray `A`.
-
-"""
-@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(dims) : B
 
 
 ## Helper functions
@@ -236,4 +176,4 @@ function check_T(::Type{T}) where {T}
     if !hasmethod(getindex, Tuple{Type{T}}) @ArgumentError("for the celltype, `T`, the following method must be defined: `@inline Base.getindex(X::T, i::Int)`") end
 end
 
-check_T(::Type{T}) where {T<:Number} = return
+check_T(::Type{T}) where {T <: Number} = return
