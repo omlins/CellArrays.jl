@@ -1,15 +1,9 @@
 module Exceptions
-export @ModuleInternalError, @IncoherentArgumentError, @ArgumentError
-export ModuleInternalError, IncoherentArgumentError, ArgumentError
+export @IncoherentArgumentError, @ArgumentError
+export IncoherentArgumentError, ArgumentError
 
-macro ModuleInternalError(msg) esc(:(throw(ModuleInternalError($msg)))) end
 macro IncoherentArgumentError(msg) esc(:(throw(IncoherentArgumentError($msg)))) end
 macro ArgumentError(msg) esc(:(throw(ArgumentError($msg)))) end
-
-struct ModuleInternalError <: Exception
-    msg::String
-end
-Base.showerror(io::IO, e::ModuleInternalError) = print(io, "ModuleInternalError: ", e.msg)
 
 struct IncoherentArgumentError <: Exception
     msg::String
