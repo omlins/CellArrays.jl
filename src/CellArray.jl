@@ -16,22 +16,22 @@ const CELLARRAY_DOC = """
 
 --------------------------------------------------------------------------------
 
-    CellArray{T,N,B}(T_arraykind, dims)
-    CellArray{T,B}(T_arraykind, dims)
-    CellArray{T}(T_arraykind, dims)
+    CellArray{T,N,B}(T_arraykind, undef, dims)
+    CellArray{T,B}(T_arraykind, undef, dims)
+    CellArray{T}(T_arraykind, undef, dims)
 
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `T_arraykind`.
 
 --------------------------------------------------------------------------------
 
-    CPUCellArray{T,B}(dims)
-    CPUCellArray{T}(dims)
+    CPUCellArray{T,B}(undef, dims)
+    CPUCellArray{T}(undef, dims)
 
-    CuCellArray{T,B}(dims)
-    CuCellArray{T}(dims)
+    CuCellArray{T,B}(undef, dims)
+    CuCellArray{T}(undef, dims)
 
-    ROCCellArray{T,B}(dims)
-    ROCCellArray{T}(dims)
+    ROCCellArray{T,B}(undef, dims)
+    ROCCellArray{T}(undef, dims)
 
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `Array`, `CuArray` or `ROCArray` depending on the constructor chosen (`CPUCellArray` or `CuCellArray` or `ROCCellArray`) .
 
