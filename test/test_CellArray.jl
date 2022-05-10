@@ -56,10 +56,10 @@ end
     @testset "1. CellArray allocation ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
         @testset "Number cells" begin
 			dims = (2,3)
-			A = CellArray{Float64}(dims)
-			B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims...)
-			C = CellArray{Float64,1}(dims)
-			D = CellArray{Int32,4}(dims)
+			A = CellArray{Float64}(undef, dims)
+			B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims...)
+			C = CellArray{Float64,1}(undef, dims)
+			D = CellArray{Int32,4}(undef, dims)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -90,10 +90,10 @@ end
 			celldims  = (3,4)
 			T_Float64 = SMatrix{celldims..., Float64, prod(celldims)}
 			T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
-			A = CellArray{T_Float64}(dims)
-			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, dims...)
-			C = CellArray{T_Float64,1}(dims)
-			D = CellArray{T_Int32,4}(dims)
+			A = CellArray{T_Float64}(undef, dims)
+			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, undef, dims...)
+			C = CellArray{T_Float64,1}(undef, dims)
+			D = CellArray{T_Int32,4}(undef, dims)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -124,10 +124,10 @@ end
 			celldims  = size(MyFieldArray)
 			T_Float64 = MyFieldArray{Float64}
 			T_Int32   = MyFieldArray{Int32}
-			A = CellArray{T_Float64}(dims)
-			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, dims...)
-			C = CellArray{T_Float64,1}(dims)
-			D = CellArray{T_Int32,4}(dims)
+			A = CellArray{T_Float64}(undef, dims)
+			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, undef, dims...)
+			C = CellArray{T_Float64,1}(undef, dims)
+			D = CellArray{T_Int32,4}(undef, dims)
 			@test typeof(A.data) <: Array
 			@test typeof(B.data) <: Array
 			@test typeof(C.data) <: Array
@@ -161,14 +161,14 @@ end
 		T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float64 = MyFieldArray{Float64}
 		T2_Int32   = MyFieldArray{Int32}
-		A = CellArray{Float64}(dims)
-		B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims)
-		C = CellArray{T_Float64}(dims)
-		D = CellArray{T_Int32,prod(dims)}(dims)
-		E = CellArray{T2_Float64}(dims)
-		F = CellArray{T2_Int32,prod(dims)}(dims)
-		G = CellArray{T_Float64,1}(dims)
-		H = CellArray{T_Int32,4}(dims)
+		A = CellArray{Float64}(undef, dims)
+		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
+		C = CellArray{T_Float64}(undef, dims)
+		D = CellArray{T_Int32,prod(dims)}(undef, dims)
+		E = CellArray{T2_Float64}(undef, dims)
+		F = CellArray{T2_Int32,prod(dims)}(undef, dims)
+		G = CellArray{T_Float64,1}(undef, dims)
+		H = CellArray{T_Int32,4}(undef, dims)
 		A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
         @testset "size" begin
 			@test size(A) == dims
@@ -224,8 +224,8 @@ end
 			if array_type == "CUDA"
 				celldims = (4,4) # Needs to be compatible for matrix multiplication!
 				T_Int32  = SMatrix{celldims...,   Int32, prod(celldims)}
-				J        = CellArray{T_Int32,4}(dims)
-				J_ref    = CellArray{T_Int32,4}(dims)
+				J        = CellArray{T_Int32,4}(undef, dims)
+				J_ref    = CellArray{T_Int32,4}(undef, dims)
 				function add2D!(A, B)
 				    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
 				    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
@@ -269,17 +269,17 @@ end
 		T_Int32    = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float64 = MyFieldArray{Float64}
 		T2_Int32   = MyFieldArray{Int32}
-		A = CellArray{Float64}(dims)
-		B = CellArrays.CellArray{Int32,prod(dims)}(Array, dims)
-		C = CellArray{T_Float64}(dims)
-		D = CellArray{T_Int32,prod(dims)}(dims)
-		E = CellArray{T2_Float64}(dims)
-		F = CellArray{T2_Int32,prod(dims)}(dims)
-		G = CellArray{T_Float64,1}(dims)
-		H = CellArray{T_Int32,4}(dims)
-		@test_throws TypeError CellArray{Array}(dims)                                                                           # Error: TypeError (celltype T is restricted to `Cell` in the package)
-		@test_throws TypeError CellArray{MMatrix{celldims..., Float64, prod(celldims)}}(dims)                                   # ...
-		@test_throws ArgumentError CellArray{MyMutableFieldArray}(dims)                                                         # Error: the celltype, `T`, must be a bitstype.
+		A = CellArray{Float64}(undef, dims)
+		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
+		C = CellArray{T_Float64}(undef, dims)
+		D = CellArray{T_Int32,prod(dims)}(undef, dims)
+		E = CellArray{T2_Float64}(undef, dims)
+		F = CellArray{T2_Int32,prod(dims)}(undef, dims)
+		G = CellArray{T_Float64,1}(undef, dims)
+		H = CellArray{T_Int32,4}(undef, dims)
+		@test_throws TypeError CellArray{Array}(undef, dims)                                                                           # Error: TypeError (celltype T is restricted to `Cell` in the package)
+		@test_throws TypeError CellArray{MMatrix{celldims..., Float64, prod(celldims)}}(undef, dims)                                   # ...
+		@test_throws ArgumentError CellArray{MyMutableFieldArray}(undef, dims)                                                         # Error: the celltype, `T`, must be a bitstype.
 		@test_throws IncoherentArgumentError CellArrays.CellArray{Float64,2,0}(similar(A.data, Float32), A.dims)                # Error: eltype(data) must match eltype(T).
 		@test_throws IncoherentArgumentError CellArrays.CellArray{Int32,2,prod(dims)}(similar(B.data, Float64), B.dims)         # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float64,2,0}(similar(C.data, Float32), C.dims)              # ...
