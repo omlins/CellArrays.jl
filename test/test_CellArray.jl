@@ -169,7 +169,6 @@ end
 		F = CellArray{T2_Int32,prod(dims)}(undef, dims)
 		G = CellArray{T_Float64,1}(undef, dims)
 		H = CellArray{T_Int32,4}(undef, dims)
-		A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
         @testset "size" begin
 			@test size(A) == dims
 			@test size(B) == dims
@@ -180,27 +179,48 @@ end
 			@test size(G) == dims
 			@test size(H) == dims
         end;
-		@testset "cellsize" begin
-			@test cellsize(A) == (1,)
-			@test cellsize(B) == (1,)
-			@test cellsize(C) == celldims
-			@test cellsize(D) == celldims
-			@test cellsize(E) == size(MyFieldArray)
-			@test cellsize(F) == size(MyFieldArray)
-			@test cellsize(G) == celldims
-			@test cellsize(H) == celldims
+		@testset "similar" begin
+			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+			@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N}}
+			@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
         end;
-		@testset "blocklength" begin
-			@test blocklength(A) == prod(dims)
-			@test blocklength(B) == prod(dims)
-			@test blocklength(C) == prod(dims)
-			@test blocklength(D) == prod(dims)
-			@test blocklength(E) == prod(dims)
-			@test blocklength(F) == prod(dims)
-			@test blocklength(G) == 1
-			@test blocklength(H) == 4
-        end;
+		@testset "fill!" begin
+			fill!(A, 9);   @test all(A.data .== 9.0)
+			fill!(B, 9.0); @test all(B.data .== 9)
+			fill!(C, (1:length(eltype(C)))); allowscalar() do
+				@test all(C .== (T_Float64(1:length(eltype(C))) for i=1:dims[1], j=1:dims[2]))
+			end
+			fill!(D, (1:length(eltype(D)))); allowscalar() do
+				@test all(D .== (T_Int32(1:length(eltype(D))) for i=1:dims[1], j=1:dims[2]))
+			end
+			fill!(E, (1:length(eltype(E)))); allowscalar() do
+				@test all(E .== (T2_Float64(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
+			end
+			fill!(F, (1:length(eltype(F)))); allowscalar() do
+				@test all(F .== (T2_Int32(1:length(eltype(F))) for i=1:dims[1], j=1:dims[2]))
+			end
+			fill!(G, (1:length(eltype(G)))); allowscalar() do
+				@test all(G .== (T_Float64(1:length(eltype(G))) for i=1:dims[1], j=1:dims[2]))
+			end
+			fill!(H, (1:length(eltype(H)))); allowscalar() do
+				@test all(H .== (T_Int32(1:length(eltype(H))) for i=1:dims[1], j=1:dims[2]))
+			end
+		end
 		@testset "getindex / setindex! (array programming)" begin
+			A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
 			allowscalar() do
 				A[2,2:3] .= 9
 				B[2,2:3] .= 9.0
@@ -222,10 +242,10 @@ end
         end;
 		@testset "getindex / setindex! (GPU kernel programming)" begin
 			if array_type == "CUDA"
-				celldims = (4,4) # Needs to be compatible for matrix multiplication!
-				T_Int32  = SMatrix{celldims...,   Int32, prod(celldims)}
-				J        = CellArray{T_Int32,4}(undef, dims)
-				J_ref    = CellArray{T_Int32,4}(undef, dims)
+				celldims2 = (4,4) # Needs to be compatible for matrix multiplication!
+				T_Int32   = SMatrix{celldims2...,   Int32, prod(celldims2)}
+				J         = CellArray{T_Int32,4}(undef, dims)
+				J_ref     = CellArray{T_Int32,4}(undef, dims)
 				function add2D!(A, B)
 				    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
 				    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
@@ -243,24 +263,26 @@ end
 				C.data.=2; G.data.=3; @cuda blocks=size(C) add2D!(C, G); synchronize(); @test all(C.data .== 5)
 			end
         end;
-		@testset "similar" begin
-			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
-        end;
+		@testset "cellsize" begin
+			@test cellsize(A) == (1,)
+			@test cellsize(B) == (1,)
+			@test cellsize(C) == celldims
+			@test cellsize(D) == celldims
+			@test cellsize(E) == size(MyFieldArray)
+			@test cellsize(F) == size(MyFieldArray)
+			@test cellsize(G) == celldims
+			@test cellsize(H) == celldims
+		end;
+		@testset "blocklength" begin
+			@test blocklength(A) == prod(dims)
+			@test blocklength(B) == prod(dims)
+			@test blocklength(C) == prod(dims)
+			@test blocklength(D) == prod(dims)
+			@test blocklength(E) == prod(dims)
+			@test blocklength(F) == prod(dims)
+			@test blocklength(G) == 1
+			@test blocklength(H) == 4
+		end;
     end;
 	@testset "3. Exceptions ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
 		dims       = (2,3)
