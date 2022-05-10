@@ -99,6 +99,9 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
     end
 end
 
+
+Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
+
 @doc CELLARRAY_DOC
 CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
 
@@ -128,6 +131,12 @@ ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray
 
 ## CellArray functions
 
+@inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
+@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
+@inline Base.size(A::CellArray)                                              = A.dims
+@inline Base.length(T::Type{<:Number}, args...)                              = 1
+
+
 @inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
     CPUCellArray{T,N,B,eltype(T)}(undef, dims)
 end
@@ -144,6 +153,19 @@ end
     check_T(T)
     T_arraykind = Base.typename(T_array0).wrapper  # Note: an alternative would be: T_array = typeof(similar(A.data, eltype(T), dims.*0)); CellArray{T,N,B}(T_array, dims)
     CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
+end
+
+
+@inline function Base.fill!(A::CellArray{T,N,B,T_array}, x) where {T<:Number,N,B,T_array}
+    cell = convert(T, x)
+    A.data[:, 1, :] .= cell
+end
+
+@inline function Base.fill!(A::CellArray{T,N,B,T_array}, X) where {T<:Union{SArray,FieldArray},N,B,T_array}
+    cell = convert(T, X)
+    for j=1:length(T)
+        A.data[:, j, :] .= cell[j]
+    end
 end
 
 
@@ -196,13 +218,6 @@ end
     end
     return
 end
-
-
-@inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
-@inline Base.size(A::CellArray)                                              = A.dims
-
-Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
 
 
 ## API functions
