@@ -57,7 +57,7 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
         check_T(T)
         if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
@@ -66,36 +66,36 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
-        CellArray{T,N,B,T_array}(T_array, dims)
+    function CellArray{T,N,B,T_array}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B,T_array}(T_array, undef, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
-        CellArray{T,N,B,T_array}(T_array, dims)
+    function CellArray{T,N,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B,T_array}(T_array, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_array}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
-        CellArray{T,N,B}(T_array, dims)
+    function CellArray{T,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+        CellArray{T,N,B}(T_array, undef, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
+    function CellArray{T,N,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,N,B}(T_arraykind, dims)
+    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,N,B}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_arraykind}, dims::Int...) where {T<:Cell,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,B}(T_arraykind, dims)
+    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,B}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T}(::Type{T_arraykind}, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,0}(T_arraykind, dims)
+    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T,0}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T}(::Type{T_arraykind}, dims::Int...) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T}(T_arraykind, dims)
+    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+        CellArray{T}(T_arraykind, undef, dims)
     end
 end
 
@@ -109,41 +109,41 @@ CuCellArray{T,N,B,T_elem}  = CellArray{T,N,B,CuArray{T_elem,_N}}
 ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
 
 
-CPUCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(dims))
- CuCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(dims))
-ROCCellArray{T,B}(dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B,eltype(T)}(dims))
+CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
+ CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
+ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
 
-CPUCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(dims)
- CuCellArray{T,B}(dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(dims)
-ROCCellArray{T,B}(dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(dims)
+CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
+ CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(undef, dims)
+ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(undef, dims)
 
-CPUCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(dims)
- CuCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,0}(dims)
-ROCCellArray{T}(dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,0}(dims)
+CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
+ CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,0}(undef, dims)
+ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,0}(undef, dims)
 
-CPUCellArray{T}(dims::Int...) where {T<:Cell} = CPUCellArray{T}(dims)
- CuCellArray{T}(dims::Int...) where {T<:Cell} = CuCellArray{T}(dims)
-ROCCellArray{T}(dims::Int...) where {T<:Cell} = ROCCellArray{T}(dims)
+CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
+ CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CuCellArray{T}(undef, dims)
+ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray{T}(undef, dims)
 
 
 ## CellArray functions
 
 @inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CPUCellArray{T,N,B,eltype(T)}(dims)
+    CPUCellArray{T,N,B,eltype(T)}(undef, dims)
 end
 
 @inline function Base.similar(A::CuCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CuCellArray{T,N,B,eltype(T)}(dims)
+    CuCellArray{T,N,B,eltype(T)}(undef, dims)
 end
 
 @inline function Base.similar(A::ROCCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    ROCCellArray{T,N,B,eltype(T)}(dims)
+    ROCCellArray{T,N,B,eltype(T)}(undef, dims)
 end
 
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
     check_T(T)
     T_arraykind = Base.typename(T_array0).wrapper  # Note: an alternative would be: T_array = typeof(similar(A.data, eltype(T), dims.*0)); CellArray{T,N,B}(T_array, dims)
-    CellArray{T,N,B}(T_arraykind{eltype(T),_N}, dims)
+    CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
 end
 
 
