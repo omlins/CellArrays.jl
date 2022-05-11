@@ -6,7 +6,7 @@ import CellArrays: IncoherentArgumentError, ArgumentError
 
 
 test_cuda = CUDA.functional()
-test_amdgpu = false #TODO: to be implemented
+test_amdgpu = AMDGPU.functional()
 
 array_types           = ["CPU"]
 ArrayConstructors     = [Array]
@@ -198,69 +198,76 @@ end
 			@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
         end;
 		@testset "fill!" begin
+			allowscalar(true)
 			fill!(A, 9);   @test all(A.data .== 9.0)
 			fill!(B, 9.0); @test all(B.data .== 9)
-			fill!(C, (1:length(eltype(C)))); allowscalar() do
-				@test all(C .== (T_Float64(1:length(eltype(C))) for i=1:dims[1], j=1:dims[2]))
-			end
-			fill!(D, (1:length(eltype(D)))); allowscalar() do
-				@test all(D .== (T_Int32(1:length(eltype(D))) for i=1:dims[1], j=1:dims[2]))
-			end
-			fill!(E, (1:length(eltype(E)))); allowscalar() do
-				@test all(E .== (T2_Float64(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
-			end
-			fill!(F, (1:length(eltype(F)))); allowscalar() do
-				@test all(F .== (T2_Int32(1:length(eltype(F))) for i=1:dims[1], j=1:dims[2]))
-			end
-			fill!(G, (1:length(eltype(G)))); allowscalar() do
-				@test all(G .== (T_Float64(1:length(eltype(G))) for i=1:dims[1], j=1:dims[2]))
-			end
-			fill!(H, (1:length(eltype(H)))); allowscalar() do
-				@test all(H .== (T_Int32(1:length(eltype(H))) for i=1:dims[1], j=1:dims[2]))
-			end
+			fill!(C, (1:length(eltype(C)))); @test all(C .== (T_Float64(1:length(eltype(C)))  for i=1:dims[1], j=1:dims[2]))
+			fill!(D, (1:length(eltype(D)))); @test all(D .== (T_Int32(1:length(eltype(D)))    for i=1:dims[1], j=1:dims[2]))
+			fill!(E, (1:length(eltype(E)))); @test all(E .== (T2_Float64(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
+			fill!(F, (1:length(eltype(F)))); @test all(F .== (T2_Int32(1:length(eltype(F)))   for i=1:dims[1], j=1:dims[2]))
+			fill!(G, (1:length(eltype(G)))); @test all(G .== (T_Float64(1:length(eltype(G)))  for i=1:dims[1], j=1:dims[2]))
+			fill!(H, (1:length(eltype(H)))); @test all(H .== (T_Int32(1:length(eltype(H)))    for i=1:dims[1], j=1:dims[2]))
+			allowscalar(false)
 		end
 		@testset "getindex / setindex! (array programming)" begin
+			allowscalar(true)
 			A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
-			allowscalar() do
-				A[2,2:3] .= 9
-				B[2,2:3] .= 9.0
-				C[2,2:3] .= (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64)))
-				D[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
-				E[2,2:3] .= (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64)))
-				F[2,2:3] .= (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32)))
-				G[2,2:3] .= (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64)))
-				H[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
-				@test all(A[2,2:3] .== 9.0)
-				@test all(B[2,2:3] .== 9)
-				@test all(C[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
-				@test all(D[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
-				@test all(E[2,2:3] .== (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64))))
-				@test all(F[2,2:3] .== (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32))))
-				@test all(G[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
-				@test all(H[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
-			end
+			A[2,2:3] .= 9
+			B[2,2:3] .= 9.0
+			C[2,2:3] .= (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64)))
+			D[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
+			E[2,2:3] .= (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64)))
+			F[2,2:3] .= (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32)))
+			G[2,2:3] .= (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64)))
+			H[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
+			@test all(A[2,2:3] .== 9.0)
+			@test all(B[2,2:3] .== 9)
+			@test all(C[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
+			@test all(D[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
+			@test all(E[2,2:3] .== (T2_Float64(1:length(T2_Float64)), T2_Float64(1:length(T2_Float64))))
+			@test all(F[2,2:3] .== (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32))))
+			@test all(G[2,2:3] .== (T_Float64(1:length(T_Float64)), T_Float64(1:length(T_Float64))))
+			@test all(H[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
+			allowscalar(false)
         end;
 		@testset "getindex / setindex! (GPU kernel programming)" begin
+			celldims2 = (4,4) # Needs to be compatible for matrix multiplication!
+			T_Int32   = SMatrix{celldims2...,   Int32, prod(celldims2)}
+			J         = CellArray{T_Int32,4}(undef, dims)
+			J_ref     = CellArray{T_Int32,4}(undef, dims)
 			if array_type == "CUDA"
-				celldims2 = (4,4) # Needs to be compatible for matrix multiplication!
-				T_Int32   = SMatrix{celldims2...,   Int32, prod(celldims2)}
-				J         = CellArray{T_Int32,4}(undef, dims)
-				J_ref     = CellArray{T_Int32,4}(undef, dims)
-				function add2D!(A, B)
+				function add2D_CUDA!(A, B)
 				    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
 				    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
 				    A[ix,iy] = A[ix,iy] + B[ix,iy];
 				    return
 				end
-				function matsquare2D!(A)
+				function matsquare2D_CUDA!(A)
 				    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
 				    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3; @cuda blocks=size(A) matsquare2D!(A); synchronize(); @test all(A.data .== 9)
-				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D!(J); synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
-				C.data.=2; G.data.=3; @cuda blocks=size(C) add2D!(C, G); synchronize(); @test all(C.data .== 5)
+				A.data.=3;                 @cuda blocks=size(A) matsquare2D_CUDA!(A); synchronize(); @test all(A.data .== 9)
+				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D_CUDA!(J); synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
+				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    synchronize(); @test all(C.data .== 5)
+			end
+			if array_type == "AMDGPU"
+				function add2D_AMDGPU!(A, B)
+				    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
+				    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
+				    A[ix,iy] = A[ix,iy] + B[ix,iy];
+				    return
+				end
+				function matsquare2D_AMDGPU!(A)
+				    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
+				    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
+					A[ix,iy] = A[ix,iy] * A[ix,iy];
+				    return
+				end
+				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(A.data .== 9)
+				J.data.=3; J_ref.data.=36; wait(@roc gridsize=size(J) matsquare2D_AMDGPU!(J)); @test AMDGPU.@allowscalar all(J .== J_ref)
+				C.data.=2; G.data.=3;      wait(@roc gridsize=size(C) add2D_AMDGPU!(C, G));    @test all(C.data .== 5)
 			end
         end;
 		@testset "cellsize" begin
