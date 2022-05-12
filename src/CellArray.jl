@@ -159,6 +159,7 @@ end
 @inline function Base.fill!(A::CellArray{T,N,B,T_array}, x) where {T<:Number,N,B,T_array}
     cell = convert(T, x)
     A.data[:, 1, :] .= cell
+    return A
 end
 
 @inline function Base.fill!(A::CellArray{T,N,B,T_array}, X) where {T<:Union{SArray,FieldArray},N,B,T_array}
@@ -166,6 +167,7 @@ end
     for j=1:length(T)
         A.data[:, j, :] .= cell[j]
     end
+    return A
 end
 
 
