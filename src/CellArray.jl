@@ -9,7 +9,7 @@ const Cell = Union{Number, SArray, FieldArray}
 
 ## Types and constructors
 
-const CELLARRAY_DOC = """
+"""
     CellArray{T<:Cell,N,B,T_array} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional array with elements of type `T`, where `T` are `Cells` of type Number, SArray or FieldArray. `B` defines the blocklength, which refers to the amount of values of a same `Cell` component that are stored contigously (`B=1` means array of struct like storage; `B=prod(dims)` means array struct of array like storage; `B=0` is an alias for `B=prod(dims)`, enabling better peformance thanks to more specialized dispatch). `T_array` defines the array type used for storage.
@@ -38,7 +38,6 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 !!! note "Performance note"
     Best performance on GPUs is in general obtained with `B=0` as set by default. `B=1` migth give better performance in certain cases. Other values of `B` do with the current implementation not lead to optimal performance on GPU.
 """
-@doc CELLARRAY_DOC
 struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <: AbstractArray{T,N}
     data::T_array
     dims::NTuple{N,Int}
@@ -102,13 +101,25 @@ end
 
 Adapt.adapt_structure(to, A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(adapt(to, A.data), A.dims)
 
-@doc CELLARRAY_DOC
+"""
+    CPUCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
+
+`N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being an `Array` of element type `T_elem`: alias for CellArray{T,N,B,Array{T_elem,CellArrays._N}}.
+"""
 CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
 
-@doc CELLARRAY_DOC
+"""
+    CuCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
+
+`N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `CuArray` of element type `T_elem`: alias for CellArray{T,N,B,CuArray{T_elem,CellArrays._N}}.
+"""
 CuCellArray{T,N,B,T_elem}  = CellArray{T,N,B,CuArray{T_elem,_N}}
 
-@doc CELLARRAY_DOC
+"""
+    ROCCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
+
+`N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `ROCArray` of element type `T_elem`: alias for CellArray{T,N,B,ROCArray{T_elem,CellArrays._N}}.
+"""
 ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
 
 
