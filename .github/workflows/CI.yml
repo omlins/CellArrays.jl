@@ -50,9 +50,9 @@ jobs:
         with:
           files: lcov.info
           version: "v0.1.15"
-      - uses: julia-actions/julia-uploadcoveralls@v1
-        env:
-          COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
+      # - uses: julia-actions/julia-uploadcoveralls@v1
+      #   env:
+      #     COVERALLS_TOKEN: ${{ secrets.COVERALLS_TOKEN }}
   docs:
     name: Documentation
     runs-on: ubuntu-latest
