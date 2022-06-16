@@ -142,12 +142,12 @@ CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray
 ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray{T}(undef, dims)
 
 
-## CellArray functions
+## AbstractArray methods
 
-@inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
-@inline Base.size(A::CellArray)                                              = A.dims
-@inline Base.length(T::Type{<:Number}, args...)                              = 1
+@inline Base.IndexStyle(::Type{<:CellArray})    = IndexLinear()
+@inline Base.size(T::Type{<:Number}, args...)   = (1,)
+@inline Base.size(A::CellArray)                 = A.dims
+@inline Base.length(T::Type{<:Number}, args...) = 1
 
 
 @inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
@@ -257,7 +257,36 @@ Return the blocklength of CellArray `A`.
 @inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(A.dims) : B
 
 
+"""
+    field(A, indices)
+    field(A, fieldname)
+
+Return an array view of the field of CellArray `A` designated with `indices` or `fieldname` (modifying the view will modify `A`). The view's dimensionality and size are equal to `A`'s. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+
+## Arguments
+- `indices::Int|NTuple{N,Int}`: the `indices` that designate the field in accordance with `A`'s cell type.
+- `fieldname::Symbol`: the `fieldname` that designate the field in accordance with `A`'s cell type.
+"""
+@inline field(A::CellArray{T,N,0,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), Base.OneTo.(size(A))..., index)
+@inline field(A::CellArray{T,N,0,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), Base.OneTo.(size(A))..., indices...)
+@inline field(A::CellArray{T,N,1,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), index,      Base.OneTo.(size(A))...)
+@inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), indices..., Base.OneTo.(size(A))...)
+@inline field(A::CellArray{T,N,B,T_array}, indices::Union{Int,NTuple{M,Int}}) where {T_elem,M,T<:AbstractArray{T_elem,M},N,B,T_array} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+@inline field(A::CellArray, indices::Int...)                                                                                          = field(A, indices)
+
+
 ## Helper functions
+
+# """
+#     plain(A)
+#
+# Return a plain `N`-dimensional array view of CellArray `A` (modifying the view will modify `A`), where `N` is the sum of the dimensionalities of `A` and the cell type of `A`. The view's dimensions are `(size(A)..., cellsize(A)...)` if parameter `B` of `A` is `0`, and `(cellsize(A)..., size(A)...)` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+#
+# """
+@inline plain(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., cellsize(A)...))
+@inline plain(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., size(A)...))
+@inline plain(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+
 
 function check_T(::Type{T}) where {T}
     if !isbitstype(T) @ArgumentError("the celltype, `T`, must be a bitstype.") end # Note: This test is required as FieldArray can be mutable and thus not bitstype (and ismutable() is for values not types...). The following tests would currently not be required as the current definition of the Cell type implies the tests to succeed.
