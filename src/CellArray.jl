@@ -234,6 +234,15 @@ end
     return
 end
 
+@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+    getindex(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), i)  # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
+end
+
+@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+    setindex!(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), X ,i)   # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
+    return
+end
+
 
 ## API functions
 
