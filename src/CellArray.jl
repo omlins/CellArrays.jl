@@ -268,13 +268,11 @@ Return the blocklength of CellArray `A`.
 
 """
     field(A, indices)
-    field(A, fieldname)
 
-Return an array view of the field of CellArray `A` designated with `indices` or `fieldname` (modifying the view will modify `A`). The view's dimensionality and size are equal to `A`'s. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+Return an array view of the field of CellArray `A` designated with `indices` (modifying the view will modify `A`). The view's dimensionality and size are equal to `A`'s. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
 
 ## Arguments
 - `indices::Int|NTuple{N,Int}`: the `indices` that designate the field in accordance with `A`'s cell type.
-- `fieldname::Symbol`: the `fieldname` that designate the field in accordance with `A`'s cell type.
 """
 @inline field(A::CellArray{T,N,0,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), Base.OneTo.(size(A))..., index)
 @inline field(A::CellArray{T,N,0,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), Base.OneTo.(size(A))..., indices...)
