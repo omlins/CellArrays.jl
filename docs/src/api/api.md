@@ -4,7 +4,7 @@ CurrentModule = CellArrays
 
 # API reference
 
-## `CellArray` type and basic constructors
+## [`CellArray`](@ref) type and basic constructors
 ```@docs
 CellArray
 ```
