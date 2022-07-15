@@ -12,7 +12,7 @@ const Cell = Union{Number, SArray, FieldArray}
 """
     CellArray{T<:Cell,N,B,T_array} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
-`N`-dimensional array with elements of type `T`, where `T` are `Cells` of type Number, SArray or FieldArray. `B` defines the blocklength, which refers to the amount of values of a same `Cell` component that are stored contigously (`B=1` means array of struct like storage; `B=prod(dims)` means array struct of array like storage; `B=0` is an alias for `B=prod(dims)`, enabling better peformance thanks to more specialized dispatch). `T_array` defines the array type used for storage.
+`N`-dimensional array with elements of type `T`, where `T` are `Cells` of type Number, SArray or FieldArray. `B` defines the blocklength, which refers to the amount of values of a same `Cell` field that are stored contigously (`B=1` means array of struct like storage; `B=prod(dims)` means array struct of array like storage; `B=0` is an alias for `B=prod(dims)`, enabling better peformance thanks to more specialized dispatch). `T_array` defines the array type used for storage.
 
 --------------------------------------------------------------------------------
 
@@ -142,12 +142,12 @@ CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray
 ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray{T}(undef, dims)
 
 
-## CellArray functions
+## AbstractArray methods
 
-@inline Base.IndexStyle(::Type{<:CellArray})                                 = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)                                = (1,)
-@inline Base.size(A::CellArray)                                              = A.dims
-@inline Base.length(T::Type{<:Number}, args...)                              = 1
+@inline Base.IndexStyle(::Type{<:CellArray})    = IndexLinear()
+@inline Base.size(T::Type{<:Number}, args...)   = (1,)
+@inline Base.size(A::CellArray)                 = A.dims
+@inline Base.length(T::Type{<:Number}, args...) = 1
 
 
 @inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
@@ -234,6 +234,15 @@ end
     return
 end
 
+@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+    getindex(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), i)  # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
+end
+
+@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+    setindex!(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), X ,i)   # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
+    return
+end
+
 
 ## API functions
 
@@ -257,7 +266,34 @@ Return the blocklength of CellArray `A`.
 @inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(A.dims) : B
 
 
+"""
+    field(A, indices)
+
+Return an array view of the field of CellArray `A` designated with `indices` (modifying the view will modify `A`). The view's dimensionality and size are equal to `A`'s. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+
+## Arguments
+- `indices::Int|NTuple{N,Int}`: the `indices` that designate the field in accordance with `A`'s cell type.
+"""
+@inline field(A::CellArray{T,N,0,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), Base.OneTo.(size(A))..., index)
+@inline field(A::CellArray{T,N,0,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), Base.OneTo.(size(A))..., indices...)
+@inline field(A::CellArray{T,N,1,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), index,      Base.OneTo.(size(A))...)
+@inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), indices..., Base.OneTo.(size(A))...)
+@inline field(A::CellArray{T,N,B,T_array}, indices::Union{Int,NTuple{M,Int}}) where {T_elem,M,T<:AbstractArray{T_elem,M},N,B,T_array} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+@inline field(A::CellArray, indices::Int...)                                                                                          = field(A, indices)
+
+
 ## Helper functions
+
+# """
+#     plain(A)
+#
+# Return a plain `N`-dimensional array view of CellArray `A` (modifying the view will modify `A`), where `N` is the sum of the dimensionalities of `A` and the cell type of `A`. The view's dimensions are `(size(A)..., cellsize(A)...)` if parameter `B` of `A` is `0`, and `(cellsize(A)..., size(A)...)` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+#
+# """
+@inline plain(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., cellsize(A)...))
+@inline plain(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., size(A)...))
+@inline plain(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+
 
 function check_T(::Type{T}) where {T}
     if !isbitstype(T) @ArgumentError("the celltype, `T`, must be a bitstype.") end # Note: This test is required as FieldArray can be mutable and thus not bitstype (and ismutable() is for values not types...). The following tests would currently not be required as the current definition of the Cell type implies the tests to succeed.
@@ -267,3 +303,23 @@ function check_T(::Type{T}) where {T}
 end
 
 check_T(::Type{T}) where {T<:Number} = return
+
+
+## Temporary CUDA implementations (to be added to CUDA.jl)
+
+## reshape
+
+function Base.reshape(a::CuDeviceArray{T,M}, dims::NTuple{N,Int}) where {T,N,M}
+  if prod(dims) != length(a)
+      throw(DimensionMismatch("new dimensions (argument `dims`) must be consistent with array size (`size(a)`)"))
+  end
+  if N == M && dims == size(a)
+      return a
+  end
+  _derived_array(T, N, a, dims)
+end
+
+# create a derived device array (reinterpreted or reshaped) that's still a CuDeviceArray
+@inline function _derived_array(::Type{T}, N::Int, a::CuDeviceArray{T,M,A}, osize::Dims) where {T, M, A}
+  return CuDeviceArray{T,N,A}(osize, a.ptr, a.maxsize)
+end
