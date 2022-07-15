@@ -18,9 +18,12 @@ makedocs(;
     ),
     pages   = [
         "Introduction"  => "index.md",
-        "Usage"         => "usage/usage.md",
-        "Examples"      => "examples/examples.md",
-        "API reference" => "api/api.md",
+        "Usage"         => "usage.md",
+        "Examples"      => [hide("..." => "examples.md"),
+                            "examples/memcopyCellArray3D.md",
+                            "examples/memcopyCellArray3D_ParallelStencil.md",
+                           ],
+        "API reference" => "api.md",
     ],
 )
 
