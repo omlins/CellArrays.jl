@@ -3,8 +3,3 @@ The package `CellArrays` Provides support for an AbstractArray subtype `CellArra
 
 ## Dependencies
 CellArrays relies on [StaticArrays.jl], [Adapt.jl] and the Julia GPU packages [CUDA.jl] and [AMDGPU.jl].
-
-<!-- ````@eval
-using Markdown
-Markdown.parse_file(joinpath("..", "src", "links.md"); flavor=:github)
-```` -->
