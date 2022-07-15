@@ -1,6 +1,6 @@
 # Examples
 
-## Memory copy of `CuCellArray`s with 4x4 `SMatrix` cells.
+## Example 1: Memory copy of [`CuCellArray`](@ref)s with 4x4 `SMatrix` cells
 ````@eval
 using Markdown
 Markdown.parse("""
@@ -10,7 +10,7 @@ $(read(joinpath("..", "..", "..", "examples", "memcopyCellArray3D.jl"), String))
 """)
 ````
 
-## Memory copy of `CellArray`s with 4x4 cells using `ParallelStencil.jl`.
+## Example 2:  Memory copy of [`CellArray`](@ref)s with 4x4 cells using [ParallelStencil.jl]
 
 ````@eval
 using Markdown
