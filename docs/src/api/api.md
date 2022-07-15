@@ -12,16 +12,15 @@ CellArray
 
 ## Convenience type aliases and constructors
 #### Index
-```@index
-Modules = [CellArrays]
-Order = [:type]
-Filter = t -> typeof(t) != CellArray     #TODO: filter is not supported yet!
-```
+* [`CellArrays.CPUCellArray`](@ref)
+* [`CellArrays.CuCellArray`](@ref)
+* [`CellArrays.ROCCellArray`](@ref)
+
 #### Documentation
 ```@autodocs
 Modules = [CellArrays]
 Order   = [:type]
-Filter = t -> typeof(t) != CellArray
+Filter = t -> typeof(t) !== CellArray
 ```
 
 
