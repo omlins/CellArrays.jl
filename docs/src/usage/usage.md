@@ -5,7 +5,7 @@ Have a look at the [Examples](@ref) and see the [API reference](@ref) for detail
     ParallelStencil.jl enables straightforward working with CellArrays. It automatically allocates Cellarrays when the keyword arguments `celldims` or `celltype` are given to the architecture-agnostic allocation macros `@zeros`, `@ones`, `@rand`, `@falses`, `@trues` and `@fill` (refer to the documentation of ParallelStencil.jl for more details).
 
 
-### Installation
+## Installation
 CellArrays can be installed directly with the Julia package manager from the REPL:
 ```julia-repl
 julia>]
