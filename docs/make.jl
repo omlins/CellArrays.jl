@@ -25,6 +25,7 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/omlins/CellArrays.jl",
-    devbranch="main",
+    repo         = "github.com/omlins/CellArrays.jl",
+    push_preview = true,
+    devbranch    ="main",
 )
