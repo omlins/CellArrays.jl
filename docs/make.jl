@@ -9,12 +9,18 @@ makedocs(;
     repo="https://github.com/omlins/CellArrays.jl/blob/{commit}{path}#{line}",
     sitename="CellArrays.jl",
     format=Documenter.HTML(;
-        prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://omlins.github.io/CellArrays.jl",
-        assets=String[],
+        prettyurls       = get(ENV, "CI", "false") == "true",
+        canonical        = "https://omlins.github.io/CellArrays.jl",
+        collapselevel    = 1,
+        sidebar_sitename = true,
+        #assets           = [asset("https://img.shields.io/github/stars/omlins/CellArrays.jl.svg", class = :ico)],
+        #warn_outdated    = true,
     ),
     pages=[
-        "Home" => "index.md",
+        "Introduction"  => "index.md",
+        "Usage"         => "usage/usage.md",
+        "Examples"      => "examples/examples.md",
+        "API reference" => "api/api.md",
     ],
 )
 
