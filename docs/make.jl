@@ -1,8 +1,15 @@
 using CellArrays
 using Documenter
+using DocExtensions
 
 DocMeta.setdocmeta!(CellArrays, :DocTestSetup, :(using CellArrays); recursive=true)
 
+@info "Preprocessing .MD-files..."
+include("reflinks.jl")
+expand_reflinks(reflinks; rootdir=joinpath(@__DIR__, "src"))
+
+
+@info "Building documentation website using Documenter.jl..."
 makedocs(;
     modules  = [CellArrays],
     authors  = "Samuel Omlin",
