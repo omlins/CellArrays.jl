@@ -1,12 +1,17 @@
 using CellArrays
 using Documenter
 using DocExtensions
+using DocExtensions.DocumenterExtensions
+
+const DOCSRC      = joinpath(@__DIR__, "src")
+const EXAMPLEROOT = joinpath(@__DIR__, "..", "examples")
 
 DocMeta.setdocmeta!(CellArrays, :DocTestSetup, :(using CellArrays); recursive=true)
 
+
 @info "Preprocessing .MD-files..."
 include("reflinks.jl")
-expand_reflinks(reflinks; rootdir=joinpath(@__DIR__, "src"))
+MarkdownExtensions.expand_reflinks(reflinks; rootdir=DOCSRC)
 
 
 @info "Building documentation website using Documenter.jl..."
@@ -20,6 +25,7 @@ makedocs(;
         canonical        = "https://omlins.github.io/CellArrays.jl",
         collapselevel    = 1,
         sidebar_sitename = true,
+        edit_link        = "main",
         #assets           = [asset("https://img.shields.io/github/stars/omlins/CellArrays.jl.svg", class = :ico)],
         #warn_outdated    = true,
     ),
@@ -34,8 +40,10 @@ makedocs(;
     ],
 )
 
+
+@info "Deploying docs..."
 deploydocs(;
     repo         = "github.com/omlins/CellArrays.jl",
     push_preview = true,
-    devbranch    ="main",
+    devbranch    = "main",
 )
