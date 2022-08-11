@@ -10,5 +10,4 @@ Have a look at the [Examples](@ref) and see the [API reference](@ref) for detail
 ```julia-repl
 julia>]
   pkg> add CellArrays
-  pkg> test CellArrays
 ```
