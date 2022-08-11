@@ -3,3 +3,7 @@ The package `CellArrays` provides support for an `AbstractArray` subtype [`CellA
 
 ## Dependencies
 `CellArrays` relies on [StaticArrays.jl], [Adapt.jl] and the Julia GPU packages [CUDA.jl] and [AMDGPU.jl].
+
+## Contributors
+The principal contributors to [CellArrays.jl] are (ordered by the significance of the relative contributions):
+- Samuel Omlin ([@omlins](https://github.com/omlins)), CSCS - Swiss National Supercomputing Centre, ETH Zurich
