@@ -4,9 +4,14 @@ using DocExtensions
 using DocExtensions.DocumenterExtensions
 
 const DOCSRC      = joinpath(@__DIR__, "src")
+const DOCASSETS   = joinpath(DOCSRC, "assets")
 const EXAMPLEROOT = joinpath(@__DIR__, "..", "examples")
 
 DocMeta.setdocmeta!(CellArrays, :DocTestSetup, :(using CellArrays); recursive=true)
+
+@info "Copy examples folder to assets"
+mkpath(DOCASSETS)
+cp(EXAMPLEROOT, joinpath(DOCASSETS, "examples"); force=true)
 
 
 @info "Preprocessing .MD-files..."
@@ -21,7 +26,7 @@ makedocs(;
     repo     = "https://github.com/omlins/CellArrays.jl/blob/{commit}{path}#{line}",
     sitename = "CellArrays.jl",
     format   = Documenter.HTML(;
-        prettyurls       = get(ENV, "CI", "false") == "true",
+        prettyurls       = true, #get(ENV, "CI", "false") == "true",
         canonical        = "https://omlins.github.io/CellArrays.jl",
         collapselevel    = 1,
         sidebar_sitename = true,
