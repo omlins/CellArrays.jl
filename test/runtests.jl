@@ -7,8 +7,8 @@ excludedfiles = [ "test_excluded.jl"];
 function runtests()
     exename   = Base.julia_cmd()
     testdir   = pwd()
-    istest(f) = endswith(f, ".jl") && startswith(f, "test_")
-    testfiles = sort(filter(istest, readdir(testdir)))
+    istest(f) = endswith(f, ".jl") && startswith(basename(f), "test_")
+    testfiles = sort(filter(istest, vcat([joinpath.(root, files) for (root, dirs, files) in walkdir(testdir)]...)))
 
     nfail = 0
     printstyled("Testing package CellArrays.jl\n"; bold=true, color=:white)

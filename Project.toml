@@ -11,7 +11,7 @@ StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
 Adapt = "3"
-AMDGPU = "0.3.7"
+AMDGPU = "0.3.7, 0.4"
 CUDA = "3"
 julia = "1.7"
 StaticArrays = "1"
