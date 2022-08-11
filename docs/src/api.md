@@ -4,6 +4,14 @@ CurrentModule = CellArrays
 
 # API reference
 
+This is the official API reference of `CellArrays`. Note that it can also be queried interactively from the [Julia REPL] using the [help mode](https://docs.julialang.org/en/v1/stdlib/REPL/#Help-mode):
+```julia-repl
+julia> using CellArrays
+julia>?
+help?> CellArrays
+```
+
+
 ## [`CellArray`](@ref) type and basic constructors
 ```@docs
 CellArray
