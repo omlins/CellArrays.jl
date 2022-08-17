@@ -9,7 +9,8 @@ const EXAMPLEROOT = joinpath(@__DIR__, "..", "examples")
 
 DocMeta.setdocmeta!(CellArrays, :DocTestSetup, :(using CellArrays); recursive=true)
 
-@info "Copy examples folder to assets"
+
+@info "Copy examples folder to assets..."
 mkpath(DOCASSETS)
 cp(EXAMPLEROOT, joinpath(DOCASSETS, "examples"); force=true)
 
