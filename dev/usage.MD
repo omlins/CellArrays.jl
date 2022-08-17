@@ -6,7 +6,7 @@ Have a look at the [Examples](@ref) and see the [API reference](@ref) for detail
 
 
 ## Installation
-`CellArrays` can be installed directly with the Julia package manager from the REPL:
+`CellArrays` can be installed directly with the [Julia package manager] from the [Julia REPL]:
 ```julia-repl
 julia>]
   pkg> add CellArrays

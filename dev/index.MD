@@ -6,4 +6,4 @@ The package `CellArrays` provides support for an `AbstractArray` subtype [`CellA
 
 ## Contributors
 The principal contributors to [CellArrays.jl] are (ordered by the significance of the relative contributions):
-- Samuel Omlin ([@omlins](https://github.com/omlins)), CSCS - Swiss National Supercomputing Centre, ETH Zurich
+- Dr. Samuel Omlin ([@omlins](https://github.com/omlins)), CSCS - Swiss National Supercomputing Centre, ETH Zurich
