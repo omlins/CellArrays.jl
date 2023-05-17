@@ -199,8 +199,8 @@ end
         end;
 		@testset "fill!" begin
 			allowscalar(true)
-			fill!(A, 9);   @test all(A.data .== 9.0)
-			fill!(B, 9.0); @test all(B.data .== 9)
+			fill!(A, 9);   @test all(A.data .== fill(9.0, size(A.data)))
+			fill!(B, 9.0); @test all(B.data .== fill(9,   size(B.data)))
 			fill!(C, (1:length(eltype(C)))); @test all(C .== (T_Float64(1:length(eltype(C)))  for i=1:dims[1], j=1:dims[2]))
 			fill!(D, (1:length(eltype(D)))); @test all(D .== (T_Int32(1:length(eltype(D)))    for i=1:dims[1], j=1:dims[2]))
 			fill!(E, (1:length(eltype(E)))); @test all(E .== (T2_Float64(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
@@ -248,9 +248,9 @@ end
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3;                 @cuda blocks=size(A) matsquare2D_CUDA!(A); synchronize(); @test all(A.data .== 9)
+				A.data.=3;                 @cuda blocks=size(A) matsquare2D_CUDA!(A); synchronize(); @test all(A.data .== fill(9, size(A.data)))
 				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D_CUDA!(J); synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
-				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    synchronize(); @test all(C.data .== 5)
+				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    synchronize(); @test all(C.data .== fill(5, size(C.data)))
 			end
 			if array_type == "AMDGPU"
 				function add2D_AMDGPU!(A, B)
@@ -265,9 +265,9 @@ end
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(A.data .== 9)
+				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(A.data .== fill(9, size(A.data))
 				J.data.=3; J_ref.data.=36; wait(@roc gridsize=size(J) matsquare2D_AMDGPU!(J)); @test AMDGPU.@allowscalar all(J .== J_ref)
-				C.data.=2; G.data.=3;      wait(@roc gridsize=size(C) add2D_AMDGPU!(C, G));    @test all(C.data .== 5)
+				C.data.=2; G.data.=3;      wait(@roc gridsize=size(C) add2D_AMDGPU!(C, G));    @test all(C.data .== fill(5, size(C.data)))
 			end
         end;
 		@testset "cellsize" begin
