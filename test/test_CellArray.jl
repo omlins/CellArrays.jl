@@ -265,7 +265,7 @@ end
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(A.data .== fill(9, size(A.data))
+				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(A.data .== fill(9, size(A.data)))
 				J.data.=3; J_ref.data.=36; wait(@roc gridsize=size(J) matsquare2D_AMDGPU!(J)); @test AMDGPU.@allowscalar all(J .== J_ref)
 				C.data.=2; G.data.=3;      wait(@roc gridsize=size(C) add2D_AMDGPU!(C, G));    @test all(C.data .== fill(5, size(C.data)))
 			end
