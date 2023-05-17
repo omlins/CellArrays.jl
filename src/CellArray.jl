@@ -82,7 +82,7 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
         CellArray{T,0}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
         CellArray{T}(T_arraykind, undef, dims)
     end
 end
