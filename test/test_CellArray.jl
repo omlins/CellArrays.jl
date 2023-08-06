@@ -248,9 +248,9 @@ end
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3;                 @cuda blocks=size(A) matsquare2D_CUDA!(A); synchronize(); @test all(Base.Array(A.data) .== 9)
-				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D_CUDA!(J); synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
-				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    synchronize(); @test all(Base.Array(C.data) .== 5)
+				A.data.=3;                 @cuda blocks=size(A) matsquare2D_CUDA!(A); CUDA.synchronize(); @test all(Base.Array(A.data) .== 9)
+				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D_CUDA!(J); CUDA.synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
+				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    CUDA.synchronize(); @test all(Base.Array(C.data) .== 5)
 			end
 			if array_type == "AMDGPU"
 				function add2D_AMDGPU!(A, B)
@@ -265,9 +265,9 @@ end
 					A[ix,iy] = A[ix,iy] * A[ix,iy];
 				    return
 				end
-				A.data.=3;                 wait(@roc gridsize=size(A) matsquare2D_AMDGPU!(A)); @test all(Base.Array(A.data) .== 9)
-				J.data.=3; J_ref.data.=36; wait(@roc gridsize=size(J) matsquare2D_AMDGPU!(J)); @test AMDGPU.@allowscalar all(J .== J_ref)
-				C.data.=2; G.data.=3;      wait(@roc gridsize=size(C) add2D_AMDGPU!(C, G));    @test all(Base.Array(C.data) .== 5)
+				A.data.=3;                 @roc gridsize=size(A) matsquare2D_AMDGPU!(A); AMDGPU.synchronize(); @test all(Base.Array(A.data) .== 9)
+				J.data.=3; J_ref.data.=36; @roc gridsize=size(J) matsquare2D_AMDGPU!(J); AMDGPU.synchronize(); @test AMDGPU.@allowscalar all(J .== J_ref)
+				C.data.=2; G.data.=3;      @roc gridsize=size(C) add2D_AMDGPU!(C, G);    AMDGPU.synchronize(); @test all(Base.Array(C.data) .== 5)
 			end
         end;
 		@testset "cellsize" begin
