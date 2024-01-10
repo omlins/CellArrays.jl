@@ -1,4 +1,5 @@
-using CellArrays, StaticArrays, CUDA
+using CUDA, StaticArrays
+using CellArrays
 
 function copy3D!(T2::CellArray, T::CellArray, Ci::CellArray)
     ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
