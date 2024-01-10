@@ -6,8 +6,8 @@ import CellArrays: CPUCellArray, cellsize, blocklength, _N
 import CellArrays: IncoherentArgumentError, ArgumentError
 
 # Aliases added has not yet working with extensions
-const CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
-const ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
+const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CuArray{T_elem,_N}}
+const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,ROCArray{T_elem,_N}}
 
 test_cuda = CUDA.functional()
 test_amdgpu = AMDGPU.functional()
