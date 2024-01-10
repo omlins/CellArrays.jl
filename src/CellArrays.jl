@@ -31,5 +31,10 @@ using .Exceptions
 include("CellArray.jl")
 
 ## Exports (need to be after include of submodules if re-exports from them)
-export CellArray, CPUCellArray, CuCellArray, ROCCellArray, cellsize, blocklength, field
+export CellArray, CPUCellArray, cellsize, blocklength, field # Exported in extensions: CuCellArray, ROCCellArray # Not working!
+
+## Some function to show that extensions are working in general (relying on multiple dispatch).
+some_function(args...) = @ArgumentError("Required extension not loaded. Import CUDA/AMDGPU before using CellArrays with GPU features.")
+export some_function
+
 end
