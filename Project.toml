@@ -4,16 +4,22 @@ authors = ["Samuel Omlin"]
 version = "0.1.4"
 
 [deps]
-AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
-CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
+[weakdeps]
+AMDGPU = "21141c5a-9bdb-4563-92ae-f87d6854732e"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
+
+[extensions]
+CellArrays_AMDGPUExt = "AMDGPU"
+CellArrays_CUDAExt = "CUDA"
+
 [compat]
-Adapt = "3"
+Adapt = "3" # TODO check v4
 AMDGPU = "0.3.7, 0.4, 0.5, 0.6, 0.7, 0.8"
 CUDA = "3.12, 4, 5"
-julia = "1.7"
+julia = "1.9" # Minimum version supporting extensions
 StaticArrays = "1"
 
 [extras]
