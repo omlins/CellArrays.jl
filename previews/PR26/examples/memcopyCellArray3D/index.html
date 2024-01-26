@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Memory copy of CuCellArrays with 4x4 SMatrix cells · CellArrays.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link rel="canonical" href="https://omlins.github.io/CellArrays.jl/examples/memcopyCellArray3D/"/><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.044/juliamono.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><div class="docs-package-name"><span class="docs-autofit"><a href="../../">CellArrays.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Introduction</a></li><li><a class="tocitem" href="../../usage/">Usage</a></li><li><input class="collapse-toggle" id="menuitem-3" type="checkbox" checked/><label class="tocitem" for="menuitem-3"><span class="docs-label">Examples</span><i class="docs-chevron"></i></label><ul class="collapsed"><li class="is-active"><a class="tocitem" href>Memory copy of <code>CuCellArray</code>s with 4x4 <code>SMatrix</code> cells</a></li><li><a class="tocitem" href="../memcopyCellArray3D_ParallelStencil/">Memory copy of <code>CellArray</code>s with 4x4 cells using ParallelStencil.jl</a></li></ul></li><li><a class="tocitem" href="../../api/">API reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Memory copy of <code>CuCellArray</code>s with 4x4 <code>SMatrix</code> cells</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Memory copy of <code>CuCellArray</code>s with 4x4 <code>SMatrix</code> cells</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/omlins/CellArrays.jl/blob/main/docs/src/examples/memcopyCellArray3D.md#" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Memory-copy-of-[CuCellArray](@ref)s-with-4x4-SMatrix-cells"><a class="docs-heading-anchor" href="#Memory-copy-of-[CuCellArray](@ref)s-with-4x4-SMatrix-cells">Memory copy of <a href="examples/@ref"><code>CuCellArray</code></a>s with 4x4 <code>SMatrix</code> cells</a><a id="Memory-copy-of-[CuCellArray](@ref)s-with-4x4-SMatrix-cells-1"></a><a class="docs-heading-anchor-permalink" href="#Memory-copy-of-[CuCellArray](@ref)s-with-4x4-SMatrix-cells" title="Permalink"></a></h1><pre><code class="language-julia hljs">using CellArrays, StaticArrays, CUDA
+
+function copy3D!(T2::CellArray, T::CellArray, Ci::CellArray)
+    ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
+    iy = (blockIdx().y-1) * blockDim().y + threadIdx().y
+    iz = (blockIdx().z-1) * blockDim().z + threadIdx().z
+    T2[ix,iy,iz] = T[ix,iy,iz] .+ Ci[ix,iy,iz];
+    return
+end
+
+
+function memcopy3D()
+# Numerics
+nx, ny, nz = 128, 128, 1024
+celldims   = (4, 4)
+nt         = 100;
+
+# Array initializations
+Cell = SMatrix{celldims..., Float64, prod(celldims)}
+T  = CuCellArray{Cell}(undef, nx, ny, nz);
+T2 = CuCellArray{Cell}(undef, nx, ny, nz);
+Ci = CuCellArray{Cell}(undef, nx, ny, nz);
+
+# Initial conditions
+Ci.data .= 0.5;
+T.data  .= 1.7;
+copy!(T2.data, T.data);
+
+# GPU launch parameters
+threads = (32, 8, 1)
+blocks  = (nx, ny, nz) .÷ threads
+
+# Time loop
+for it = 1:nt
+    if (it == 11) global t0=time(); end
+    @cuda blocks=blocks threads=threads copy3D!(T2, T, Ci);
+    synchronize()
+    T, T2 = T2, T;
+end
+time_s=time()-t0
+
+# Performance
+A_eff = (2*1+1)*1/1e9*nx*ny*nz*prod(celldims)*sizeof(Float64);
+t_it  = time_s/(nt-10);
+T_eff = A_eff/t_it;
+println(&quot;time_s=$time_s T_eff=$T_eff&quot;);
+end
+
+memcopy3D()
+</code></pre><p>The corresponding file can be found <a href="../../assets/examples/memcopyCellArray3D.jl">here</a>.</p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../">« ...</a><a class="docs-footer-nextpage" href="../memcopyCellArray3D_ParallelStencil/">Memory copy of <code>CellArray</code>s with 4x4 cells using ParallelStencil.jl »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.16 on <span class="colophon-date" title="Friday 26 January 2024 18:45">Friday 26 January 2024</span>. Using Julia version 1.10.0.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
