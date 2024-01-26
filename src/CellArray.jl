@@ -1,4 +1,4 @@
-using StaticArrays, Adapt, CUDA, AMDGPU
+using StaticArrays, Adapt
 
 
 ## Constants
@@ -104,7 +104,7 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 See also: [`CellArray`](@ref), [`CuCellArray`](@ref), [`ROCCellArray`](@ref)
 """
-CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
+macro CPUCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,Base.Array{$T_elem,$_N}})) end
 
 
 """
@@ -121,7 +121,7 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`ROCCellArray`](@ref)
 """
-CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
+macro CuCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,CUDA.CuArray{$T_elem,$_N}})) end
 
 
 """
@@ -138,24 +138,15 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`CuCellArray`](@ref)
 """
-ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
+macro ROCCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,AMDGPU.ROCArray{$T_elem,$_N}})) end
 
 
-CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
- CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
-ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
-
-CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
- CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(undef, dims)
-ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(undef, dims)
-
-CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
- CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,0}(undef, dims)
-ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,0}(undef, dims)
-
-CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
- CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CuCellArray{T}(undef, dims)
-ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray{T}(undef, dims)
+macro CPUCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(Base.Array, undef, $dims))) end
+macro CPUCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(Base.Array, undef, $dims))) end
+macro  CuCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(CUDA.CuArray, undef, $dims))) end
+macro  CuCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(CUDA.CuArray, undef, $dims))) end
+macro ROCCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(AMDGPU.ROCArray, undef, $dims))) end
+macro ROCCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(AMDGPU.ROCArray, undef, $dims))) end
 
 
 ## AbstractArray methods
@@ -165,18 +156,6 @@ ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray
 @inline Base.size(A::CellArray)                 = A.dims
 @inline Base.length(T::Type{<:Number}, args...) = 1
 
-
-@inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CPUCellArray{T,N,B,eltype(T)}(undef, dims)
-end
-
-@inline function Base.similar(A::CuCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CuCellArray{T,N,B,eltype(T)}(undef, dims)
-end
-
-@inline function Base.similar(A::ROCCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    ROCCellArray{T,N,B,eltype(T)}(undef, dims)
-end
 
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
     check_T(T)
@@ -250,11 +229,11 @@ end
     return
 end
 
-@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.getindex(A::@CPUCellArray(T,N,1,T_elem), i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
     getindex(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), i)  # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
 end
 
-@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.setindex!(A::@CPUCellArray(T,N,1,T_elem), X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
     setindex!(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), X ,i)   # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
     return
 end
