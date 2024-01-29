@@ -1,5 +1,7 @@
 using CellArrays, StaticArrays, CUDA
 
+@define_CuCellArray
+
 function copy3D!(T2::CellArray, T::CellArray, Ci::CellArray)
     ix = (blockIdx().x-1) * blockDim().x + threadIdx().x
     iy = (blockIdx().y-1) * blockDim().y + threadIdx().y
