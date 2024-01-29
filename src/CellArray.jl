@@ -1,4 +1,4 @@
-using StaticArrays, Adapt, CUDA, AMDGPU
+using StaticArrays, Adapt
 
 
 ## Constants
@@ -104,10 +104,20 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 See also: [`CellArray`](@ref), [`CuCellArray`](@ref), [`ROCCellArray`](@ref)
 """
-CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
+const CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
+
+CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
+CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
 
 
 """
+    @define_CuCellArray
+
+Define the following type alias and constructors in the caller module:
+
+********************************************************************************
     CuCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `CuArray` of element type `T_elem`: alias for `CellArray{T,N,B,CuArray{T_elem,CellArrays._N}}`.
@@ -120,11 +130,32 @@ CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `CuArray`.
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`ROCCellArray`](@ref)
-"""
-CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
+********************************************************************************
 
+!!! note "Avoiding unneeded dependencies"
+    The type aliases and constructors for GPU `CellArray`s are provided via macros to avoid unneeded dependencies on the GPU packages in CellArrays.
+
+See also: [`@define_ROCCellArray`](@ref)
+"""
+macro define_CuCellArray() esc(define_CuCellArray()) end
+
+function define_CuCellArray()
+    quote
+        const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N}}
+
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
+        CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = CuCellArray{T,B}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
+    end
+end
 
 """
+    @define_ROCCellArray
+
+Define the following type alias and constructors in the caller module:
+
+********************************************************************************
     ROCCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `ROCArray` of element type `T_elem`: alias for `CellArray{T,N,B,ROCArray{T_elem,CellArrays._N}}`.
@@ -137,25 +168,25 @@ CuCellArray{T,N,B,T_elem} = CellArray{T,N,B,CuArray{T_elem,_N}}
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `ROCArray`.
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`CuCellArray`](@ref)
+********************************************************************************
+
+!!! note "Avoiding unneeded dependencies"
+    The type aliases and constructors for GPU `CellArray`s are provided via macros to avoid unneeded dependencies on the GPU packages in CellArrays.
+
+See also: [`@define_CuCellArray`](@ref)
 """
-ROCCellArray{T,N,B,T_elem} = CellArray{T,N,B,ROCArray{T_elem,_N}}
+macro define_ROCCellArray() esc(define_ROCCellArray()) end
 
+function define_ROCCellArray()
+    quote
+        const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
 
-CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
- CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
-ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
-
-CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
- CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CuCellArray{T,B}(undef, dims)
-ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = ROCCellArray{T,B}(undef, dims)
-
-CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
- CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CuCellArray{T,0}(undef, dims)
-ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = ROCCellArray{T,0}(undef, dims)
-
-CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
- CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CuCellArray{T}(undef, dims)
-ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray{T}(undef, dims)
+        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
+        ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = ROCCellArray{T,B}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
+    end
+end
 
 
 ## AbstractArray methods
@@ -165,18 +196,6 @@ ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = ROCCellArray
 @inline Base.size(A::CellArray)                 = A.dims
 @inline Base.length(T::Type{<:Number}, args...) = 1
 
-
-@inline function Base.similar(A::CPUCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CPUCellArray{T,N,B,eltype(T)}(undef, dims)
-end
-
-@inline function Base.similar(A::CuCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    CuCellArray{T,N,B,eltype(T)}(undef, dims)
-end
-
-@inline function Base.similar(A::ROCCellArray{T0,N0,B,T_elem0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_elem0,T<:Cell,N}
-    ROCCellArray{T,N,B,eltype(T)}(undef, dims)
-end
 
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
     check_T(T)

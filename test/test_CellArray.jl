@@ -1,9 +1,11 @@
 using Test
 using CUDA, AMDGPU, StaticArrays
 import CellArrays
-import CellArrays: CPUCellArray, CuCellArray, ROCCellArray, cellsize, blocklength, _N
+import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, _N
 import CellArrays: IncoherentArgumentError, ArgumentError
 
+@define_CuCellArray
+@define_ROCCellArray
 
 test_cuda = CUDA.functional()
 test_amdgpu = AMDGPU.functional()

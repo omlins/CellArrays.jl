@@ -1,5 +1,6 @@
 const USE_GPU = true
 using CellArrays, StaticArrays
+import CUDA
 using ParallelStencil
 using ParallelStencil.FiniteDifferences3D
 @static if USE_GPU
