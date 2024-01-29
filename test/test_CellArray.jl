@@ -1,21 +1,11 @@
 using Test
 using CUDA, AMDGPU, StaticArrays
 import CellArrays
-import CellArrays: @CPUCellArray, @CuCellArray, @ROCCellArray, cellsize, blocklength, _N, Cell
+import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, _N
 import CellArrays: IncoherentArgumentError, ArgumentError
 
-const CPUCellArray{T,N,B,T_elem} = @CPUCellArray(T,N,B,T_elem)
-const CuCellArray{T,N,B,T_elem}  = @CuCellArray(T,N,B,T_elem)
-const ROCCellArray{T,N,B,T_elem} = @ROCCellArray(T,N,B,T_elem)
-
-const CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = @CPUCellArray(T,B,dims)
-const  CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = @CuCellArray(T,B,dims)
-const ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = @ROCCellArray(T,B,dims)
-
-const CPUCellArray{T  }(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N  } = @CPUCellArray(T,dims)
-const  CuCellArray{T  }(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N  } = @CuCellArray(T,dims)
-const ROCCellArray{T  }(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N  } = @ROCCellArray(T,dims)
-
+@define_CuCellArray
+@define_ROCCellArray
 
 test_cuda = CUDA.functional()
 test_amdgpu = AMDGPU.functional()
