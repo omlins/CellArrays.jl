@@ -104,10 +104,20 @@ Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of typ
 
 See also: [`CellArray`](@ref), [`CuCellArray`](@ref), [`ROCCellArray`](@ref)
 """
-macro CPUCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,Base.Array{$T_elem,$_N}})) end
+const CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
+
+CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
+CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
 
 
 """
+    @define_CuCellArray
+
+Define the following type alias and constructors in the caller module:
+
+********************************************************************************
     CuCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `CuArray` of element type `T_elem`: alias for `CellArray{T,N,B,CuArray{T_elem,CellArrays._N}}`.
@@ -120,11 +130,32 @@ macro CPUCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,Base.Array{
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `CuArray`.
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`ROCCellArray`](@ref)
-"""
-macro CuCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,CUDA.CuArray{$T_elem,$_N}})) end
+********************************************************************************
 
+!!! note "Avoiding unneeded dependencies"
+    The type aliases and constructors for GPU `CellArray`s are provided via macros to avoid unneeded dependencies on the GPU packages in CellArrays.
+
+See also: [`@define_ROCCellArray`](@ref)
+"""
+macro define_CuCellArray() esc(define_CuCellArray()) end
+
+function define_CuCellArray()
+    quote
+        const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N}}
+
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
+        CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = CuCellArray{T,B}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
+    end
+end
 
 """
+    @define_ROCCellArray
+
+Define the following type alias and constructors in the caller module:
+
+********************************************************************************
     ROCCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
 `N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `ROCArray` of element type `T_elem`: alias for `CellArray{T,N,B,ROCArray{T_elem,CellArrays._N}}`.
@@ -137,16 +168,25 @@ macro CuCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,CUDA.CuArray
 Construct an uninitialized `N`-dimensional `CellArray` containing `Cells` of type `T` which are stored in an array of kind `ROCArray`.
 
 See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`CuCellArray`](@ref)
+********************************************************************************
+
+!!! note "Avoiding unneeded dependencies"
+    The type aliases and constructors for GPU `CellArray`s are provided via macros to avoid unneeded dependencies on the GPU packages in CellArrays.
+
+See also: [`@define_CuCellArray`](@ref)
 """
-macro ROCCellArray(T,N,B,T_elem) esc(:(CellArrays.CellArray{$T,$N,$B,AMDGPU.ROCArray{$T_elem,$_N}})) end
+macro define_ROCCellArray() esc(define_ROCCellArray()) end
 
+function define_ROCCellArray()
+    quote
+        const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
 
-macro CPUCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(Base.Array, undef, $dims))) end
-macro CPUCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(Base.Array, undef, $dims))) end
-macro  CuCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(CUDA.CuArray, undef, $dims))) end
-macro  CuCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(CUDA.CuArray, undef, $dims))) end
-macro ROCCellArray(T,B, dims) esc(:(CellArrays.CellArray{$T,$B}(AMDGPU.ROCArray, undef, $dims))) end
-macro ROCCellArray(T,   dims) esc(:(CellArrays.CellArray{$T   }(AMDGPU.ROCArray, undef, $dims))) end
+        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
+        ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = ROCCellArray{T,B}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
+    end
+end
 
 
 ## AbstractArray methods
@@ -229,11 +269,11 @@ end
     return
 end
 
-@inline function Base.getindex(A::@CPUCellArray(T,N,1,T_elem), i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
     getindex(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), i)  # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
 end
 
-@inline function Base.setindex!(A::@CPUCellArray(T,N,1,T_elem), X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
     setindex!(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), X ,i)   # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
     return
 end
