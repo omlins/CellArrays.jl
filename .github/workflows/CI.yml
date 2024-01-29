@@ -20,7 +20,7 @@ jobs:
         version:
           - '1.9' # Minimum required Julia version (supporting extensions)
           - '1'   # Latest stable 1.x release of Julia
-          - 'nightly'
+          #- 'nightly' # CUDA fails to pre-compile on nightly
         os:
           - ubuntu-latest
           - macOS-latest
