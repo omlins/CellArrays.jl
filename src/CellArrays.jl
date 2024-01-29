@@ -6,11 +6,11 @@ Provides support for an AbstractArray subtype `CellArray`, which represents arra
 # General overview and examples
 https://github.com/omlins/CellArray.jl
 
-# Constructors
+# Constructors and type aliases
 - [`CellArray`](@ref)
 - [`CPUCellArray`](@ref)
-- [`CuCellArray`](@ref)
-- [`ROCCellArray`](@ref)
+- `CuCellArray` (available via [`@define_CuCellArray`](@ref))
+- `ROCCellArray` (available via [`@define_ROCCellArray`](@ref))
 
 # Functions (additional to standard AbstractArray functionality)
 - [`cellsize`](@ref)
@@ -31,5 +31,5 @@ using .Exceptions
 include("CellArray.jl")
 
 ## Exports (need to be after include of submodules if re-exports from them)
-export CellArray, @CPUCellArray, @CuCellArray, @ROCCellArray, cellsize, blocklength, field
+export CellArray, CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, field
 end
