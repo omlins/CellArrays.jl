@@ -1,7 +1,7 @@
 name = "CellArrays"
 uuid = "d35fcfd7-7af4-4c67-b1aa-d78070614af4"
 authors = ["Samuel Omlin"]
-version = "0.1.4"
+version = "0.2.0"
 
 [deps]
 Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
@@ -15,7 +15,7 @@ CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Adapt = "3, 4"
 AMDGPU = "0.3.7, 0.4, 0.5, 0.6, 0.7, 0.8"
 CUDA = "3.12, 4, 5"
-julia = "1.9" # Minimum required Julia version (supporting extensions)
+julia = "1.9" # Minimum required Julia version (supporting extensions and weak dependencies)
 StaticArrays = "1"
 
 [extras]
