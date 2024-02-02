@@ -5,7 +5,7 @@ import CellArrays # Precompile it.
 excludedfiles = [ "test_excluded.jl"];
 
 function runtests()
-    exename   = joinpath(Sys.BINDIR, Base.julia_exename())
+    exename   = Base.julia_cmd()
     testdir   = pwd()
     istest(f) = endswith(f, ".jl") && startswith(basename(f), "test_")
     testfiles = sort(filter(istest, vcat([joinpath.(root, files) for (root, dirs, files) in walkdir(testdir)]...)))
