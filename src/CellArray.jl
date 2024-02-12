@@ -243,7 +243,7 @@ end
 
 @inline function Base.fill!(A::CellArray{T,N,B,T_array}, x) where {T<:Number,N,B,T_array}
     cell = convert(T, x)
-    fill!(A.data, cell)
+    A.data[:, 1, :] .= cell
     return A
 end
 
