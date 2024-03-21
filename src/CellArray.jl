@@ -143,7 +143,7 @@ function define_CuCellArray()
     quote
         const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N}}
 
-        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); CuCellArray{T,N,B,eltype(T)}(undef, dims))
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims))
         CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = CuCellArray{T,B}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
@@ -181,7 +181,7 @@ function define_ROCCellArray()
     quote
         const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
 
-        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); ROCCellArray{T,N,B,eltype(T)}(undef, dims))
+        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims))
         ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = ROCCellArray{T,B}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
