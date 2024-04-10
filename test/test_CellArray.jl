@@ -13,12 +13,15 @@ test_amdgpu = AMDGPU.functional()
 test_metal  = Metal.functional()
 
 array_types           = ["CPU"]
+FloatDefaultTypes 	  = [Float64]
 ArrayConstructors     = [Array]
 CellArrayConstructors = [CPUCellArray]
 allowscalar_functions = Function[(x->x)]
+
 if test_cuda
 	cuzeros = CUDA.zeros
 	push!(array_types, "CUDA")
+	push!(FloatDefaultTypes, Float64)
 	push!(ArrayConstructors, CuArray)
 	push!(CellArrayConstructors, CuCellArray)
 	push!(allowscalar_functions, CUDA.allowscalar)
@@ -26,6 +29,7 @@ end
 if test_amdgpu
 	roczeros = AMDGPU.zeros
 	push!(array_types, "AMDGPU")
+	push!(FloatDefaultTypes, Float64)
 	push!(ArrayConstructors, ROCArray)
 	push!(CellArrayConstructors, ROCCellArray)
 	push!(allowscalar_functions, AMDGPU.allowscalar) #TODO: to be implemented
@@ -33,6 +37,7 @@ end
 if test_metal
 	mtlzeros = Metal.zeros
 	push!(array_types, "Metal")
+	push!(FloatDefaultTypes, Float32)
 	push!(ArrayConstructors, MtlArray)
 	push!(CellArrayConstructors, MtlCellArray)
 	push!(allowscalar_functions, Metal.allowscalar) #TODO: to be implemented
@@ -63,8 +68,7 @@ mutable struct MyMutableFieldArray{T} <: FieldArray{Tuple{2}, T, 1}
 end
 
 @testset "$(basename(@__FILE__))" begin
-    @testset "1. CellArray allocation ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
-        Float = array_type === "Metal" ? Float32 : Float64
+    @testset "1. CellArray allocation ($array_type arrays)" for (array_type, Array, CellArray, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, FloatDefaultTypes)
         @testset "Number cells" begin
             dims = (2,3)
             A = CellArray{Float}(undef, dims)
@@ -165,8 +169,7 @@ end
 			@test D.dims         == dims
         end;
     end;
-	@testset "2. functions ($array_type arrays)" for (array_type, Array, CellArray, allowscalar) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions)
-        Float    = array_type === "Metal" ? Float32 : Float64
+	@testset "2. functions ($array_type arrays)" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, FloatDefaultTypes)
         dims     = (2,3)
 		celldims = (3,4) # Needs to be compatible for matrix multiplication!
 		T_Float  = SMatrix{celldims..., Float, prod(celldims)}
@@ -318,7 +321,8 @@ end
 			@test blocklength(H) == 4
 		end;
     end;
-	@testset "3. Exceptions ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
+	
+	@testset "3. Exceptions ($array_type arrays)" for (array_type, Array, CellArray, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, FloatDefaultTypes)
         Float       = array_type === "Metal" ? Float32 : Float64
 		dims     = (2,3)
 		celldims = (3,4)
