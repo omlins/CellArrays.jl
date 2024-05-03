@@ -10,7 +10,7 @@ import CellArrays: IncoherentArgumentError, ArgumentError
 
 test_cuda   = CUDA.functional()
 test_amdgpu = AMDGPU.functional()
-test_metal  = Metal.functional()
+test_metal  = @static Metal.functional() && Sys.isapple()
 
 array_types           = ["CPU"]
 FloatDefaultTypes 	  = [Float64]
