@@ -267,23 +267,23 @@ for DataType in TEST_PRECISIONS
 				J.data.=3; J_ref.data.=36; @cuda blocks=size(J) matsquare2D_CUDA!(J); CUDA.synchronize(); @test CUDA.@allowscalar all(J .== J_ref)
 				C.data.=2; G.data.=3;      @cuda blocks=size(C) add2D_CUDA!(C, G);    CUDA.synchronize(); @test all(Base.Array(C.data) .== 5)
 			end
-			# if array_type == "AMDGPU"
-			# 	function add2D_AMDGPU!(A, B)
-			# 	    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
-			# 	    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
-			# 	    A[ix,iy] = A[ix,iy] + B[ix,iy];
-			# 	    return
-			# 	end
-			# 	function matsquare2D_AMDGPU!(A)
-			# 	    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
-			# 	    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
-			# 		A[ix,iy] = A[ix,iy] * A[ix,iy];
-			# 	    return
-			# 	end
-			# 	A.data.=3;                 @roc gridsize=size(A) matsquare2D_AMDGPU!(A); AMDGPU.synchronize(); @test all(Base.Array(A.data) .== 9)
-			# 	J.data.=3; J_ref.data.=36; @roc gridsize=size(J) matsquare2D_AMDGPU!(J); AMDGPU.synchronize(); @test AMDGPU.@allowscalar all(J .== J_ref)
-			# 	C.data.=2; G.data.=3;      @roc gridsize=size(C) add2D_AMDGPU!(C, G);    AMDGPU.synchronize(); @test all(Base.Array(C.data) .== 5)
-			# end
+			if array_type == "AMDGPU"
+				function add2D_AMDGPU!(A, B)
+				    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
+				    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
+				    A[ix,iy] = A[ix,iy] + B[ix,iy];
+				    return
+				end
+				function matsquare2D_AMDGPU!(A)
+				    ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
+				    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
+					A[ix,iy] = A[ix,iy] * A[ix,iy];
+				    return
+				end
+				A.data.=3;                 @roc gridsize=size(A) matsquare2D_AMDGPU!(A); AMDGPU.synchronize(); @test all(Base.Array(A.data) .== 9)
+				J.data.=3; J_ref.data.=36; @roc gridsize=size(J) matsquare2D_AMDGPU!(J); AMDGPU.synchronize(); @test AMDGPU.@allowscalar all(J .== J_ref)
+				C.data.=2; G.data.=3;      @roc gridsize=size(C) add2D_AMDGPU!(C, G);    AMDGPU.synchronize(); @test all(Base.Array(C.data) .== 5)
+			end
 			if array_type == "Metal"
 				function add2D_Metal!(A, B)
 				    ix = (Metal.threadgroup_position_in_grid_3d().x-1) * Metal.threads_per_threadgroup_3d().x + Metal.thread_position_in_threadgroup_3d().x
