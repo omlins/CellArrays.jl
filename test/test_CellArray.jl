@@ -1,5 +1,5 @@
 using Test
-using CUDA, AMDGPU, StaticArrays
+using CUDA, AMDGPU, Metal, StaticArrays
 import CellArrays
 import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, @define_MtlCellArray, cellsize, blocklength, _N
 import CellArrays: IncoherentArgumentError, ArgumentError
@@ -8,9 +8,9 @@ import CellArrays: IncoherentArgumentError, ArgumentError
 @define_ROCCellArray
 @define_MtlCellArray
 
-test_cuda = (@static CUDA.functional() ? true : false)
-test_amdgpu = (@static AMDGPU.functional() ? true : false)
-test_metal = (@static Metal.functional() ? true : false)
+test_cuda = CUDA.functional()
+test_amdgpu = AMDGPU.functional()
+test_metal = Metal.functional()
 
 array_types           = ["CPU"]
 ArrayConstructors     = [Array]
