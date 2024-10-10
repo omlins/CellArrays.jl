@@ -28,14 +28,14 @@ if test_amdgpu
 	push!(array_types, "AMDGPU")
 	push!(ArrayConstructors, ROCArray)
 	push!(CellArrayConstructors, ROCCellArray)
-	push!(allowscalar_functions, AMDGPU.allowscalar) #TODO: to be implemented
+	push!(allowscalar_functions, AMDGPU.allowscalar)
 end
 if test_metal
 	metalzeros = Metal.zeros
 	push!(array_types, "Metal")
 	push!(ArrayConstructors, MtlArray)
 	push!(CellArrayConstructors, MtlCellArray)
-	push!(allowscalar_functions, Metal.allowscalar) #TODO: to be implemented
+	push!(allowscalar_functions, Metal.allowscalar)
 end
 
 struct MyFieldArray{T} <: FieldArray{Tuple{2,2,2,2}, T, 4}
