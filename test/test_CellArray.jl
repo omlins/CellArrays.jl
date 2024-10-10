@@ -65,7 +65,7 @@ end
 const TEST_PRECISIONS = [Float32, Float64]
 for (array_type, Array, CellArray, allowscalar) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions)
 for DataType in TEST_PRECISIONS
-(array_type == "Metal" && DataType == Float64) ? continue : nothing # Metal does not support DataType
+(array_type == "Metal" && DataType == Float64) ? continue : nothing # Metal does not support Float64
 
 @testset "$(basename(@__FILE__)) ($array_type arrays) (precision: $DataType)" begin
     @testset "1. CellArray allocation ($array_type arrays) (precision: $DataType)" begin
