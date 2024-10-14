@@ -11,6 +11,7 @@ https://github.com/omlins/CellArray.jl
 - [`CPUCellArray`](@ref)
 - `CuCellArray` (available via [`@define_CuCellArray`](@ref))
 - `ROCCellArray` (available via [`@define_ROCCellArray`](@ref))
+- `MtlCellArray` (available via [`@define_MtlCellArray`](@ref))
 
 # Functions (additional to standard AbstractArray functionality)
 - [`cellsize`](@ref)
@@ -31,5 +32,5 @@ using .Exceptions
 include("CellArray.jl")
 
 ## Exports (need to be after include of submodules if re-exports from them)
-export CellArray, CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, field
+export CellArray, CPUCellArray, @define_CuCellArray, @define_ROCCellArray, @define_MtlCellArray, cellsize, blocklength, field
 end
