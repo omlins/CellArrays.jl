@@ -66,8 +66,8 @@ mutable struct MyMutableFieldArray{T} <: FieldArray{Tuple{2}, T, 1}
     yxxx::T
 end
 
-@testset "$(basename(@__FILE__)) ($array_type arrays) (precision: $Float)" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
-    @testset "1. CellArray allocation ($array_type arrays) (precision: $(nameof(Float))" begin
+@testset "$(basename(@__FILE__))" begin
+    @testset "1. CellArray allocation ($array_type arrays) (precision: $(nameof(Float))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
         @testset "Number cells" begin
 			dims = (2,3)
 			A = CellArray{Float}(undef, dims)
@@ -168,18 +168,18 @@ end
 			@test D.dims         == dims
         end;
     end;
-	@testset "2. functions ($array_type arrays)" begin
+	@testset "2. functions ($array_type arrays) (precision: $(nameof(Float))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
 		dims      = (2,3)
 		celldims  = (3,4) # Needs to be compatible for matrix multiplication!
 		T_Float = SMatrix{celldims..., Float, prod(celldims)}
 		T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
-		T2_DataType = MyFieldArray{Float}
+		T2_Float = MyFieldArray{Float}
 		T2_Int32   = MyFieldArray{Int32}
 		A = CellArray{Float}(undef, dims)
 		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
 		C = CellArray{T_Float}(undef, dims)
 		D = CellArray{T_Int32,prod(dims)}(undef, dims)
-		E = CellArray{T2_DataType}(undef, dims)
+		E = CellArray{T2_Float}(undef, dims)
 		F = CellArray{T2_Int32,prod(dims)}(undef, dims)
 		G = CellArray{T_Float,1}(undef, dims)
 		H = CellArray{T_Int32,4}(undef, dims)
@@ -217,7 +217,7 @@ end
 				fill!(B, 9.0); @test all(Base.Array(B.data) .== 9)
 				fill!(C, (1:length(eltype(C)))); @test all(C .== (T_Float(1:length(eltype(C)))  for i=1:dims[1], j=1:dims[2]))
 				fill!(D, (1:length(eltype(D)))); @test all(D .== (T_Int32(1:length(eltype(D)))    for i=1:dims[1], j=1:dims[2]))
-				fill!(E, (1:length(eltype(E)))); @test all(E .== (T2_DataType(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
+				fill!(E, (1:length(eltype(E)))); @test all(E .== (T2_Float(1:length(eltype(E))) for i=1:dims[1], j=1:dims[2]))
 				fill!(F, (1:length(eltype(F)))); @test all(F .== (T2_Int32(1:length(eltype(F)))   for i=1:dims[1], j=1:dims[2]))
 				fill!(G, (1:length(eltype(G)))); @test all(G .== (T_Float(1:length(eltype(G)))  for i=1:dims[1], j=1:dims[2]))
 				fill!(H, (1:length(eltype(H)))); @test all(H .== (T_Int32(1:length(eltype(H)))    for i=1:dims[1], j=1:dims[2]))
@@ -230,7 +230,7 @@ end
 				B[2,2:3] .= 9.0
 				C[2,2:3] .= (T_Float(1:length(T_Float)), T_Float(1:length(T_Float)))
 				D[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
-				E[2,2:3] .= (T2_DataType(1:length(T2_DataType)), T2_DataType(1:length(T2_DataType)))
+				E[2,2:3] .= (T2_Float(1:length(T2_Float)), T2_Float(1:length(T2_Float)))
 				F[2,2:3] .= (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32)))
 				G[2,2:3] .= (T_Float(1:length(T_Float)), T_Float(1:length(T_Float)))
 				H[2,2:3] .= (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32)))
@@ -238,7 +238,7 @@ end
 				@test all(B[2,2:3] .== 9)
 				@test all(C[2,2:3] .== (T_Float(1:length(T_Float)), T_Float(1:length(T_Float))))
 				@test all(D[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
-				@test all(E[2,2:3] .== (T2_DataType(1:length(T2_DataType)), T2_DataType(1:length(T2_DataType))))
+				@test all(E[2,2:3] .== (T2_Float(1:length(T2_Float)), T2_Float(1:length(T2_Float))))
 				@test all(F[2,2:3] .== (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32))))
 				@test all(G[2,2:3] .== (T_Float(1:length(T_Float)), T_Float(1:length(T_Float))))
 				@test all(H[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
@@ -322,18 +322,18 @@ end
 			@test blocklength(H) == 4
 		end;
     end;
-	@testset "3. Exceptions ($array_type arrays)" begin
+	@testset "3. Exceptions ($array_type arrays) (precision: $(nameof(Float))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
 		dims       = (2,3)
 		celldims   = (3,4)
 		T_Float  = SMatrix{celldims..., Float, prod(celldims)}
 		T_Int32    = SMatrix{celldims...,   Int32, prod(celldims)}
-		T2_DataType = MyFieldArray{Float}
+		T2_Float = MyFieldArray{Float}
 		T2_Int32   = MyFieldArray{Int32}
 		A = CellArray{Float}(undef, dims)
 		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
 		C = CellArray{T_Float}(undef, dims)
 		D = CellArray{T_Int32,prod(dims)}(undef, dims)
-		E = CellArray{T2_DataType}(undef, dims)
+		E = CellArray{T2_Float}(undef, dims)
 		F = CellArray{T2_Int32,prod(dims)}(undef, dims)
 		G = CellArray{T_Float,1}(undef, dims)
 		H = CellArray{T_Int32,4}(undef, dims)
@@ -344,16 +344,16 @@ end
 		@test_throws IncoherentArgumentError CellArrays.CellArray{Int32,2,prod(dims)}(similar(B.data, Float), B.dims)         # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float,2,0}(similar(C.data, Int64), C.dims)              # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,prod(dims)}(similar(D.data, T_Int32), D.dims)       # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_DataType,2,0}(similar(E.data, Int64), E.dims)             # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float,2,0}(similar(E.data, Int64), E.dims)             # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Int32,2,prod(dims)}(similar(F.data, T2_Int32), F.dims)     # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float,2,1}(similar(G.data, Int64), G.dims)              # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Int32,2,4}(similar(H.data, T_Int32), H.dims)                # ...
 		@test_throws MethodError CellArrays.CellArray{Float,2,0}(A.data[:], A.dims)                                           # Error: ndims(data) must be 3.
 		@test_throws MethodError CellArrays.CellArray{T_Float,2,0}(C.data[:], C.dims)                                         # Error: ...
-		@test_throws MethodError CellArrays.CellArray{T2_DataType,2,0}(E.data[:], E.dims)                                        # Error: ...
+		@test_throws MethodError CellArrays.CellArray{T2_Float,2,0}(E.data[:], E.dims)                                        # Error: ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{Float,2,0}(similar(A.data, Float, (1,2,1)), A.dims)       # Error: size(data) must match (blocklen, prod(size(T), ceil(prod(dims)/blocklen)).
 		@test_throws IncoherentArgumentError CellArrays.CellArray{T_Float,2,0}(similar(C.data, Float, (1,2,1)), C.dims)     # ...
-		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_DataType,2,0}(similar(E.data, Float, (1,2,1)), E.dims)    # ...
+		@test_throws IncoherentArgumentError CellArrays.CellArray{T2_Float,2,0}(similar(E.data, Float, (1,2,1)), E.dims)    # ...
 		@test_throws IncoherentArgumentError CellArrays.CellArray{SMatrix{(4,5)..., Float, prod((4,5))},2,0}(C.data, C.dims)  # ...
 	end;
 end;
