@@ -1,6 +1,7 @@
 using Test
 using Pkg
 Pkg.add(url="https://github.com/JuliaGPU/Metal.jl", rev="windowsfix")
+#hello
 
 using CUDA, AMDGPU, Metal, StaticArrays
 import CellArrays
