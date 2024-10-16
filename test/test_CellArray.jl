@@ -1,4 +1,7 @@
 using Test
+using Pkg
+Pkg.add(url="https://github.com/JuliaGPU/Metal.jl", rev="windowsfix")
+
 using CUDA, AMDGPU, Metal, StaticArrays
 import CellArrays
 import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, @define_MtlCellArray, cellsize, blocklength, _N
@@ -67,7 +70,7 @@ mutable struct MyMutableFieldArray{T} <: FieldArray{Tuple{2}, T, 1}
 end
 
 @testset "$(basename(@__FILE__))" begin
-    @testset "1. CellArray allocation ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+    @testset "1. CellArray allocation ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types)
         @testset "Number cells" begin
 			dims = (2,3)
 			A = CellArray{Float}(undef, dims)
@@ -168,7 +171,7 @@ end
 			@test D.dims         == dims
         end;
     end;
-	@testset "2. functions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+	@testset "2. functions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types)
 		dims      = (2,3)
 		celldims  = (3,4) # Needs to be compatible for matrix multiplication!
 		T_Float = SMatrix{celldims..., Float, prod(celldims)}
@@ -322,7 +325,7 @@ end
 			@test blocklength(H) == 4
 		end;
     end;
-	@testset "3. Exceptions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+	@testset "3. Exceptions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types)
 		dims       = (2,3)
 		celldims   = (3,4)
 		T_Float  = SMatrix{celldims..., Float, prod(celldims)}
