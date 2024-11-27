@@ -1,7 +1,7 @@
 using Test
 using CUDA, AMDGPU, StaticArrays
 import CellArrays
-import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, _N
+import CellArrays: CPUCellArray, @define_CuCellArray, @define_ROCCellArray, cellsize, blocklength, field, _N
 import CellArrays: IncoherentArgumentError, ArgumentError
 
 @define_CuCellArray
@@ -291,6 +291,24 @@ end
 			@test blocklength(F) == prod(dims)
 			@test blocklength(G) == 1
 			@test blocklength(H) == 4
+		end;
+		@testset "field" begin
+			@test size(field(A, 1)) == dims
+			@test size(field(C, 3,4)) == dims
+			@test size(field(E, 2,2,2,2)) == dims
+			@test size(field(G, 3,4)) == dims
+			@test size(field(E, :xxxx))	== dims
+			@test size(field(E, :yxxx))	== dims
+			@test size(field(E, :xyxx))	== dims
+			@test size(field(E, :yyxx))	== dims
+			@test size(field(E, :yyyy))	== dims
+		end;
+		@testset "field property" begin
+			@test E.xxxx == field(E, :xxxx)
+			@test E.yxxx == field(E, :yxxx)
+			@test E.xyxx == field(E, :xyxx)
+			@test E.yyxx == field(E, :yyxx)
+			@test E.yyyy == field(E, :yyyy)
 		end;
     end;
 	@testset "3. Exceptions ($array_type arrays)" for (array_type, Array, CellArray) in zip(array_types, ArrayConstructors, CellArrayConstructors)
