@@ -111,6 +111,8 @@ CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellA
 CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
 CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
 
+CPUCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(Array(A.data), A.dims)
+
 
 """
     @define_CuCellArray
@@ -120,7 +122,7 @@ Define the following type alias and constructors in the caller module:
 ********************************************************************************
     CuCellArray{T<:Cell,N,B,T_elem} <: AbstractArray{T,N} where Cell <: Union{Number, SArray, FieldArray}
 
-`N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `CuArray` of element type `T_elem`: alias for `CellArray{T,N,B,CuArray{T_elem,CellArrays._N}}`.
+`N`-dimensional CellArray with cells of type `T`, blocklength `B`, and `T_array` being a `CuArray` of element type `T_elem`: alias for `CellArray{T,N,B,CuArray{T_elem,CellArrays._N,CUDA.DeviceMemory}}`.
 
 --------------------------------------------------------------------------------
 
@@ -141,12 +143,17 @@ macro define_CuCellArray() esc(define_CuCellArray()) end
 
 function define_CuCellArray()
     quote
-        const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N}}
+        const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N,CUDA.DeviceMemory}}
 
-        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims))
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = (CellArrays.check_T(T); A = CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A)
         CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = CuCellArray{T,B}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
+
+        CuCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A)
+
+        Base.show(io::IO, A::CuCellArray)                                          = Base.show(io, CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
     end
 end
 
@@ -185,6 +192,11 @@ function define_ROCCellArray()
         ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = ROCCellArray{T,B}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
+
+        ROCCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims)
+
+        Base.show(io::IO, A::ROCCellArray)                                          = Base.show(io, CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
     end
 end
 
@@ -223,6 +235,11 @@ function define_MtlCellArray()
         MtlCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = MtlCellArray{T,B}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,0}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = MtlCellArray{T}(undef, dims)
+
+        MtlCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims)
+
+        Base.show(io::IO, A::MtlCellArray)                                          = Base.show(io, CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
     end
 end
 
@@ -237,8 +254,8 @@ end
 
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
     check_T(T)
-    T_arraykind = Base.typename(T_array0).wrapper  # Note: an alternative would be: T_array = typeof(similar(A.data, eltype(T), dims.*0)); CellArray{T,N,B}(T_array, dims)
-    CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
+    T_array = typeof(similar(A.data, eltype(T), ntuple(i -> 0, _N))) # Note: an alternative would have been in the past (this misses however the CUDA.DeviceMemory argument if T_arraykind is CuArray): T_arraykind = Base.typename(T_array0).wrapper; CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
+    CellArray{T,N,B}(T_array, undef, dims)
 end
 
 
@@ -319,11 +336,16 @@ end
 
 ## CellArray properties
 
-@inline Base.getproperty(A::CellArray{T,N,B,T_array}, s::Symbol) where {T<:FieldArray,N,B,T_array} = _getproperty(A, Val(s))
-@inline _getproperty(A::CellArray{T,N,B,T_array}, s::Val) where {T<:FieldArray,N,B,T_array}        = _getfield(A, s)
-@inline _getfield(A::CellArray{T,N,B,T_array}, ::Val{:data}) where {T<:FieldArray,N,B,T_array}     = getfield(A, :data)
-@inline _getfield(A::CellArray{T,N,B,T_array}, ::Val{:dims}) where {T<:FieldArray,N,B,T_array}     = getfield(A, :dims)
-@inline _getfield(A::CellArray{T,N,B,T_array}, s::Val) where {T<:FieldArray,N,B,T_array}           = field(A, s)
+@inline Base.getproperty(A::CellArray{T,N,B,T_array}, fieldname::Symbol) where {T<:FieldArray,N,B,T_array} = getproperty(A, Val(fieldname))
+
+@inline Base.getproperty(A::CellArray{T,N,B,T_array}, ::Val{:data}) where {T<:FieldArray{N2,T2,D},N,B,T_array} where {N2,T2,D} = getfield(A, :data)
+@inline Base.getproperty(A::CellArray{T,N,B,T_array}, ::Val{:dims}) where {T<:FieldArray{N2,T2,D},N,B,T_array} where {N2,T2,D} = getfield(A, :dims)
+
+@inline @generated function Base.getproperty(A::CellArray{T,N,B,T_array}, ::Val{fieldname}) where {T<:FieldArray{N2,T2,D},N,B,T_array,fieldname} where {N2,T2,D}
+    names   = SArray{N2}(fieldnames(T))
+    indices = Tuple(findfirst(x->x===fieldname, names))
+    return :(field(A, $(indices)))
+end
 
 
 ## API functions
@@ -362,13 +384,7 @@ Return an array view of the field of CellArray `A` designated with `indices` or 
 @inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), indices..., Base.OneTo.(size(A))...)
 @inline field(A::CellArray{T,N,B,T_array}, indices::Union{Int,NTuple{M,Int}}) where {T_elem,M,T<:AbstractArray{T_elem,M},N,B,T_array} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
 @inline field(A::CellArray, indices::Int...)                                                                                          = field(A, indices)
-@inline field(A::CellArray{T,N,B,T_array}, fieldname::Symbol)                 where {T<:FieldArray,N,B,T_array}                       = field(A, Val(fieldname))
-
-@inline @generated function field(A::CellArray{T,N,B,T_array}, ::Val{fieldname}) where {T<:FieldArray{N2,T2,D},N,B,T_array,fieldname} where {N2,T2,D}
-    names   = SArray{N2}(fieldnames(T))
-    indices = Tuple(findfirst(x->x===fieldname, names))
-    return :(field(A, $(indices...)))
-end
+@inline field(A::CellArray{T,N,B,T_array}, fieldname::Symbol)                 where {T<:FieldArray,N,B,T_array}                       = getproperty(A, fieldname)
 
 
 ## Helper functions
