@@ -150,10 +150,10 @@ function define_CuCellArray()
         CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
 
-        CuCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A)
+        CuCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArrays.CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A)
 
-        Base.show(io::IO, A::CuCellArray)                                          = Base.show(io, CPUCellArray(A))
-        Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
+        Base.show(io::IO, A::CuCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
     end
 end
 
@@ -193,10 +193,10 @@ function define_ROCCellArray()
         ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
 
-        ROCCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims)
+        ROCCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArrays.CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims)
 
-        Base.show(io::IO, A::ROCCellArray)                                          = Base.show(io, CPUCellArray(A))
-        Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
+        Base.show(io::IO, A::ROCCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
     end
 end
 
@@ -236,10 +236,10 @@ function define_MtlCellArray()
         MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,0}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = MtlCellArray{T}(undef, dims)
 
-        MtlCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims)
+        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims)
 
-        Base.show(io::IO, A::MtlCellArray)                                          = Base.show(io, CPUCellArray(A))
-        Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CPUCellArray(A)) )
+        Base.show(io::IO, A::MtlCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
+        Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
     end
 end
 
