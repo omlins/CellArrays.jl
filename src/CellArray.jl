@@ -3,8 +3,10 @@ using StaticArrays, Adapt
 
 ## Constants
 
-const _N = 3
-const Cell = Union{Number, SArray, FieldArray}
+const _N        = 3
+const B0        = 0
+const Cell      = Union{Number, SArray, FieldArray}
+const ArrayCell = Union{SArray, FieldArray}
 
 
 ## Types and constructors
@@ -45,7 +47,7 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         check_T(T)
         if (T_elem != eltype(T)) @IncoherentArgumentError("T_elem must match eltype(T).") end
         celldims = size(T)  # Note: size must be defined for type T (as it is e.g. for StaticArrays)
@@ -54,35 +56,35 @@ struct CellArray{T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N} where {T_elem}} <
         CellArray{T,N,B,T_array}(data, dims)
     end
 
-    function CellArray{T,N,B,T_array}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B,T_array}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         CellArray{T,N,B,T_array}(T_array, undef, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,N,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         CellArray{T,N,B,T_array}(T_array, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem} #where {Type{T_array}<:DataType}
+    function CellArray{T,B}(::Type{T_array}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_array<:AbstractArray{T_elem,_N}} where {T_elem}
         CellArray{T,N,B}(T_array, undef, dims)
     end
 
-    function CellArray{T,N,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T,N,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray}
         CellArray{T,N,B}(T_arraykind{eltype(T),_N}, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B,T_arraykind<:AbstractArray}
         CellArray{T,N,B}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,B,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T,B}(::Type{T_arraykind}, ::UndefInitializer, dims::Vararg{Int, N}) where {T<:Cell,N,B,T_arraykind<:AbstractArray}
         CellArray{T,B}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
-        CellArray{T,0}(T_arraykind, undef, dims)
+    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,T_arraykind<:AbstractArray}
+        CellArray{T,B0}(T_arraykind, undef, dims)
     end
 
-    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::Int...) where {T<:Cell,T_arraykind<:AbstractArray} #where {Type{T_arraykind}<:UnionAll}
+    function CellArray{T}(::Type{T_arraykind}, ::UndefInitializer, dims::Vararg{Int, N}) where {T<:Cell,N,T_arraykind<:AbstractArray}
         CellArray{T}(T_arraykind, undef, dims)
     end
 end
@@ -107,11 +109,15 @@ See also: [`CellArray`](@ref), [`CuCellArray`](@ref), [`ROCCellArray`](@ref)
 const CPUCellArray{T,N,B,T_elem} = CellArray{T,N,B,Array{T_elem,_N}}
 
 CPUCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N,B} = (check_T(T); CPUCellArray{T,N,B,eltype(T)}(undef, dims))
-CPUCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:Cell,B} = CPUCellArray{T,B}(undef, dims)
-CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,0}(undef, dims)
-CPUCellArray{T}(::UndefInitializer, dims::Int...) where {T<:Cell} = CPUCellArray{T}(undef, dims)
+CPUCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:Cell,B,N} = CPUCellArray{T,B}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:Cell,N} = CPUCellArray{T,B0}(undef, dims)
+CPUCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:Cell,N} = CPUCellArray{T}(undef, dims)
 
 CPUCellArray(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = CellArray{T,N,B}(Array(A.data), A.dims)
+
+# TODO: to be added for all kinds of CellArrays:
+# CPUCellArray(A::AbstractArray{T,N}, B::Integer) where {T<:Cell,N} = ( C=CPUCellArray{T,B}(undef, N); C.=A; C )
+# CPUCellArray(A::AbstractArray{T,N}) where {T<:Cell,N} = CPUCellArray(A, B0)
 
 
 """
@@ -145,14 +151,14 @@ function define_CuCellArray()
     quote
         const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N,CUDA.DeviceMemory}}
 
-        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A )
-        CuCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = CuCellArray{T,B}(undef, dims)
-        CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,0}(undef, dims)
-        CuCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = CuCellArray{T}(undef, dims)
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @cuda launch=false launch=false f(A) end; A )
+        CuCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = CuCellArray{T,B}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,CellArrays.B0}(undef, dims)
+        CuCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = CuCellArray{T}(undef, dims)
 
-        CuCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArrays.CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @cuda f(A) end; A)
+        CuCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArrays.CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @cuda launch=false f(A) end; A)
 
-        Base.show(io::IO, A::CuCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
+        Base.show(io::IO, A::CuCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
     end
 end
@@ -188,15 +194,17 @@ function define_ROCCellArray()
     quote
         const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
         
-        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @roc f(A) end; A )
-        ROCCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = ROCCellArray{T,B}(undef, dims)
-        ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,0}(undef, dims)
-        ROCCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = ROCCellArray{T}(undef, dims)
+        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
+        ROCCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = ROCCellArray{T,B}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,CellArrays.B0}(undef, dims)
+        ROCCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = ROCCellArray{T}(undef, dims)
 
-        ROCCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @roc f(A) end; A )
+        ROCCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
 
         Base.show(io::IO, A::ROCCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
+
+        @inline Base.getproperty(A::ROCCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : @ArgumentError("Field access by name is not yet supported for ROCCellArray.") )
     end
 end
 
@@ -231,25 +239,27 @@ function define_MtlCellArray()
     quote
         const MtlCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlArray{T_elem,CellArrays._N}}
 
-        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @metal f(A) end; A )
-        MtlCellArray{T,B}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell,B} = MtlCellArray{T,B}(undef, dims)
-        MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,0}(undef, dims)
-        MtlCellArray{T}(::UndefInitializer, dims::Int...) where {T<:CellArrays.Cell} = MtlCellArray{T}(undef, dims)
+        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
+        MtlCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = MtlCellArray{T,B}(undef, dims)
+        MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,CellArrays.B0}(undef, dims)
+        MtlCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = MtlCellArray{T}(undef, dims)
 
-        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); f(A)=(CellArrays.plain(A); return); if (B in (0,1)) @metal f(A) end; A )
+        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
 
-        Base.show(io::IO, A::MtlCellArray)                                          = Base.show(io, CellArrays.CPUCellArray(A))
+        Base.show(io::IO, A::MtlCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
+
+        @inline Base.getproperty(A::MtlCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : @ArgumentError("Field access by name is not yet supported for MtlCellArray.") )
     end
 end
 
 
 ## AbstractArray methods
 
-@inline Base.IndexStyle(::Type{<:CellArray})    = IndexLinear()
-@inline Base.size(T::Type{<:Number}, args...)   = (1,)
-@inline Base.size(A::CellArray)                 = A.dims
-@inline Base.length(T::Type{<:Number}, args...) = 1
+@inline Base.IndexStyle(::Type{<:CellArray})  = IndexLinear()
+@inline Base.size(::Type{<:Number}, args...)  = (1,)
+@inline Base.size(A::CellArray)               = A.dims
+@inline Base.length(::Type{<:Number})         = 1
 
 
 @inline function Base.similar(A::CellArray{T0,N0,B,T_array0}, ::Type{T}, dims::NTuple{N,Int}) where {T0,N0,B,T_array0,T<:Cell,N}
@@ -265,7 +275,7 @@ end
     return A
 end
 
-@inline function Base.fill!(A::CellArray{T,N,B,T_array}, X) where {T<:Union{SArray,FieldArray},N,B,T_array}
+@inline function Base.fill!(A::CellArray{T,N,B,T_array}, X) where {T<:ArrayCell,N,B,T_array}
     cell = convert(T, X)
     for j=1:length(T)
         A.data[:, j, :] .= cell[j]
@@ -283,11 +293,11 @@ end
     return
 end
 
-@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}
+@inline function Base.getindex(A::CellArray{T,N,B,T_array}, i::Int) where {T<:ArrayCell,N,B,T_array}
     T(getindex(A.data, Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
 end
 
-@inline function Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,B,T_array}
+@inline function Base.setindex!(A::CellArray{T,N,B,T_array}, X::T, i::Int) where {T<:ArrayCell,N,B,T_array}
     for j=1:length(T)
         A.data[Base._to_linear_index(A.data::T_array, (i-1)%B+1, j, (i-1)÷B+1)] = X[j]
     end
@@ -298,11 +308,11 @@ end
 @inline Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
 @inline Base.setindex!(A::CellArray{T,N,0,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}          = (A.data[i] = x; return)
 
-@inline function Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+@inline function Base.getindex(A::CellArray{T,N,0,T_array}, i::Int) where {T<:ArrayCell,N,T_array}
     T(getindex(A.data, Base._to_linear_index(A.data::T_array, i, j, 1)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
 end
 
-@inline function Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+@inline function Base.setindex!(A::CellArray{T,N,0,T_array}, X::T, i::Int) where {T<:ArrayCell,N,T_array}
     for j=1:length(T)
         A.data[Base._to_linear_index(A.data::T_array, i, j, 1)] = X[j]
     end
@@ -313,25 +323,31 @@ end
 @inline Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Number,N,T_array<:AbstractArray{T,_N}} = T(A.data[i])
 @inline Base.setindex!(A::CellArray{T,N,1,T_array}, x::Number, i::Int) where {T<:Number,N,T_array}          = (A.data[i] = x; return)
 
-@inline function Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+@inline function Base.getindex(A::CellArray{T,N,1,T_array}, i::Int) where {T<:ArrayCell,N,T_array}
     T(getindex(A.data, Base._to_linear_index(A.data::T_array, 1, j, i)) for j=1:length(T)) # NOTE:The same fails on GPU if convert is used.
 end
 
-@inline function Base.setindex!(A::CellArray{T,N,1,T_array}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_array}
+@inline function Base.setindex!(A::CellArray{T,N,1,T_array}, X::T, i::Int) where {T<:ArrayCell,N,T_array}
     for j=1:length(T)
         A.data[Base._to_linear_index(A.data::T_array, 1, j, i)] = X[j]
     end
     return
 end
 
-@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.getindex(A::CPUCellArray{T,N,1,T_elem}, i::Int) where {T<:ArrayCell,N,T_elem}
     getindex(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), i)  # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
 end
 
-@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:Union{SArray,FieldArray},N,T_elem}
+@inline function Base.setindex!(A::CPUCellArray{T,N,1,T_elem}, X::T, i::Int) where {T<:ArrayCell,N,T_elem}
     setindex!(reinterpret(reshape, T, view(A.data::Array{T_elem,_N},1,:,:)), X ,i)   # NOTE: reinterpret is not implemented for CUDA device arrays, i.e. for usage in kernels
     return
 end
+
+
+## Array operation overloading
+
+Base.:(==)(A::CellArray, B::CellArray) = all(A.data .== B.data) # NOTE: for some reason the following does not work robustly: A.data == B.data
+Base.:(<)(A::CellArray, B::CellArray)  = all(A.data .< B.data)
 
 
 ## CellArray properties
@@ -361,11 +377,21 @@ Return a tuple containing the dimensions of `A` or return only a specific dimens
 
 
 """
+    celllength(A)
+
+Return the cell length of CellArray `A`.
+"""
+@inline celllength(A::AbstractArray) = length(eltype(A))
+
+
+"""
     blocklength(A)
 
 Return the blocklength of CellArray `A`.
 """
-@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (B == 0) ? prod(A.dims) : B
+@inline blocklength(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = prod(A.dims)
+@inline blocklength(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = 1
+@inline blocklength(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = B
 
 
 """
@@ -375,16 +401,16 @@ Return the blocklength of CellArray `A`.
 Return an array view of the field of CellArray `A` designated with `indices` or `fieldname` (modifying the view will modify `A`). The view's dimensionality and size are equal to `A`'s. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
 
 ## Arguments
-- `indices::Int|NTuple{N,Int}`: the `indices` that designate the field in accordance with `A`'s cell type.
+- `indices::Int|NTuple{N,Int}`: the `indices` that designate the field in accordance with `A`'s cell type (flat indexing is supported for multi dimensional cells).
 - `fieldname::Symbol`: the `fieldname` that designates the field in accordance with `A`'s cell type.
 """
-@inline field(A::CellArray{T,N,0,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), Base.OneTo.(size(A))..., index)
-@inline field(A::CellArray{T,N,0,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), Base.OneTo.(size(A))..., indices...)
-@inline field(A::CellArray{T,N,1,T_array}, index::Int)                        where {T,N,T_array}                                     = view(plain(A), index,      Base.OneTo.(size(A))...)
-@inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})            where {T_elem,M,T<:AbstractArray{T_elem,M},N,  T_array} = view(plain(A), indices..., Base.OneTo.(size(A))...)
-@inline field(A::CellArray{T,N,B,T_array}, indices::Union{Int,NTuple{M,Int}}) where {T_elem,M,T<:AbstractArray{T_elem,M},N,B,T_array} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
-@inline field(A::CellArray, indices::Int...)                                                                                          = field(A, indices)
-@inline field(A::CellArray{T,N,B,T_array}, fieldname::Symbol)                 where {T<:FieldArray,N,B,T_array}                       = getproperty(A, fieldname)
+@inline field(A::CellArray{T,N,0,T_array}, index::Tuple{Int})                        where {T<:ArrayCell,N,  T_array}   = reshape(view(plain_flat(A),               :,   index...), size(A))
+@inline field(A::CellArray{T,N,0,T_array}, indices::NTuple{M,Int})                   where {T<:ArrayCell,N,  T_array,M} = reshape(view(plain_arrayflat(A),          :, indices...), size(A))
+@inline field(A::CellArray{T,N,1,T_array}, index::Tuple{Int})                        where {T<:ArrayCell,N,  T_array}   = reshape(view(plain_flat(A),        index...,          :), size(A))
+@inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})                   where {T<:ArrayCell,N,  T_array,M} = reshape(view(plain_arrayflat(A), indices...,          :), size(A))
+@inline field(A::CellArray{T,N,B,T_array}, indices::Union{Tuple{Int},NTuple{M,Int}}) where {T<:ArrayCell,N,B,T_array,M} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+@inline field(A::CellArray, indices::Vararg{Int, N})                                 where {N}                          = field(A, indices)
+@inline field(A::CellArray{T,N,B,T_array}, fieldname::Symbol)                        where {T<:FieldArray,N,B,T_array}  = getproperty(A, fieldname)
 
 
 ## Helper functions
@@ -398,6 +424,36 @@ Return an array view of the field of CellArray `A` designated with `indices` or 
 @inline plain(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., cellsize(A)...))
 @inline plain(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., size(A)...))
 @inline plain(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+
+# """
+#     plain_arrayflat(A)
+#
+# Return a plain `N`-dimensional array view of CellArray `A` with flat array indexing (modifying the view will modify `A`), where `N` is the sum of the length of `A` and the dimensionalities of the cell type of `A`. The view's dimensions are `(length(A), cellsize(A)...)` if parameter `B` of `A` is `0`, and `(cellsize(A)..., length(A))` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+#
+# """
+@inline plain_arrayflat(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (length(A), cellsize(A)...))
+@inline plain_arrayflat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., length(A)))
+@inline plain_arrayflat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+
+# """
+#     plain_cellflat(A)
+#
+# Return a plain `N`-dimensional array view of CellArray `A` with flat cell indexing (modifying the view will modify `A`), where `N` is the sum of the dimensionalities of `A` and the length of the cell type of `A`. The view's dimensions are `(size(A)..., celllength(A))` if parameter `B` of `A` is `0`, and `(celllength(A), size(A)...)` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+#
+# """
+@inline plain_cellflat(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., celllength(A)))
+@inline plain_cellflat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (celllength(A), size(A)...))
+@inline plain_cellflat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+
+# """
+#     plain_flat(A)
+#
+# Return a plain `N`-dimensional array view of CellArray `A` with flat array and cell indexing (modifying the view will modify `A`), where `N` is the sum of the length of `A` and the length of the cell type of `A`. The view's dimensions are `(length(A), celllength(A))` if parameter `B` of `A` is `0`, and `(celllength(A), length(A))` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
+#
+# """
+@inline plain_flat(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (length(A), celllength(A)))
+@inline plain_flat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (celllength(A), length(A)))
+@inline plain_flat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
 
 
 function check_T(::Type{T}) where {T}
