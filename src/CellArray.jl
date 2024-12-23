@@ -192,8 +192,8 @@ macro define_ROCCellArray() esc(define_ROCCellArray()) end
 
 function define_ROCCellArray()
     quote
-        const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
-        const ROCDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCDeviceArray{T_elem,CellArrays._N}}
+        const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}} # TODO: ,AMDGPU.Runtime.Mem.HIPBuffer should be added here later. The moment it has no impact (and would require adaption of the unit tests).
+        const ROCDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCDeviceArray{T_elem,CellArrays._N,AMDGPU.Runtime.Mem.HIPBuffer}}
         
         ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
         ROCCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = ROCCellArray{T,B}(undef, dims)
