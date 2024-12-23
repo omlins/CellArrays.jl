@@ -419,15 +419,16 @@ Return an array view of the field of CellArray `A` designated with `indices` or 
 
 ## Helper functions
 
+# NOTE: the following function could be provided in public API:
 # """
 #     plain(A)
 #
 # Return a plain `N`-dimensional array view of CellArray `A` (modifying the view will modify `A`), where `N` is the sum of the dimensionalities of `A` and the cell type of `A`. The view's dimensions are `(size(A)..., cellsize(A)...)` if parameter `B` of `A` is `0`, and `(cellsize(A)..., size(A)...)` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
 #
 # """
-@inline plain(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., cellsize(A)...))
-@inline plain(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., size(A)...))
-@inline plain(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+# @inline plain(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., cellsize(A)...))
+# @inline plain(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., size(A)...))
+# @inline plain(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
 
 # """
 #     plain_arrayflat(A)
@@ -439,15 +440,16 @@ Return an array view of the field of CellArray `A` designated with `indices` or 
 @inline plain_arrayflat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (cellsize(A)..., length(A)))
 @inline plain_arrayflat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
 
+# NOTE: the following function could be provided in public API:
 # """
 #     plain_cellflat(A)
 #
 # Return a plain `N`-dimensional array view of CellArray `A` with flat cell indexing (modifying the view will modify `A`), where `N` is the sum of the dimensionalities of `A` and the length of the cell type of `A`. The view's dimensions are `(size(A)..., celllength(A))` if parameter `B` of `A` is `0`, and `(celllength(A), size(A)...)` if parameter `B` of `A` is `1`. The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.
 #
 # """
-@inline plain_cellflat(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., celllength(A)))
-@inline plain_cellflat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (celllength(A), size(A)...))
-@inline plain_cellflat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
+# @inline plain_cellflat(A::CellArray{T,N,0,T_array}) where {T,N,  T_array} = reshape(A.data, (size(A)..., celllength(A)))
+# @inline plain_cellflat(A::CellArray{T,N,1,T_array}) where {T,N,  T_array} = reshape(A.data, (celllength(A), size(A)...))
+# @inline plain_cellflat(A::CellArray{T,N,B,T_array}) where {T,N,B,T_array} = @ArgumentError("The operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
 
 # """
 #     plain_flat(A)
