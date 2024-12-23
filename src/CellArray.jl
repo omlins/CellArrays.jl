@@ -193,6 +193,7 @@ macro define_ROCCellArray() esc(define_ROCCellArray()) end
 function define_ROCCellArray()
     quote
         const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}}
+        const ROCDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCDeviceArray{T_elem,CellArrays._N}}
         
         ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
         ROCCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = ROCCellArray{T,B}(undef, dims)
@@ -204,7 +205,7 @@ function define_ROCCellArray()
         Base.show(io::IO, A::ROCCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
 
-        @inline Base.getproperty(A::ROCCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : CellArrays.@ArgumentError("Field access by name is not yet supported for ROCCellArray.") )
+        @inline Base.getproperty(A::ROCDeviceCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : CellArrays.@ArgumentError("Field access by name is not yet supported for ROCDeviceCellArray.") )
     end
 end
 
@@ -238,6 +239,7 @@ macro define_MtlCellArray() esc(define_MtlCellArray()) end
 function define_MtlCellArray()
     quote
         const MtlCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlArray{T_elem,CellArrays._N}}
+        const MtlDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlDeviceArray{T_elem,CellArrays._N}}
 
         MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
         MtlCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = MtlCellArray{T,B}(undef, dims)
@@ -249,7 +251,7 @@ function define_MtlCellArray()
         Base.show(io::IO, A::MtlCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
 
-        @inline Base.getproperty(A::MtlCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : CellArrays.@ArgumentError("Field access by name is not yet supported for MtlCellArray.") )
+        @inline Base.getproperty(A::MtlDeviceCellArray{T,N,B,T_elem}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_elem} = ( (fieldname===:dims || fieldname===:data) ? getproperty(A, Val(fieldname)) : CellArrays.@ArgumentError("Field access by name is not yet supported for MtlCellArray.") )
     end
 end
 
