@@ -349,7 +349,8 @@ end
 ## Array operation overloading
 
 Base.:(==)(A::CellArray, B::CellArray) = all(A.data .== B.data) # NOTE: for some reason the following does not work robustly: A.data == B.data
-Base.:(<)(A::CellArray, B::CellArray)  = all(A.data .< B.data)
+# TODO: Comparison "<" does not work for integers:
+# Base.:(<)(A::CellArray, B::CellArray)  = all(A.data .< B.data)
 
 
 ## CellArray properties
