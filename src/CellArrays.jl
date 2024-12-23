@@ -32,5 +32,5 @@ using .Exceptions
 include("CellArray.jl")
 
 ## Exports (need to be after include of submodules if re-exports from them)
-export CellArray, CPUCellArray, @define_CuCellArray, @define_ROCCellArray, @define_MtlCellArray, cellsize, blocklength, field
+export CellArray, CPUCellArray, @define_CuCellArray, @define_ROCCellArray, @define_MtlCellArray, cellsize, celllength, blocklength, field
 end

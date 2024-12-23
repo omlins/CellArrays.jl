@@ -67,7 +67,7 @@ mutable struct MyMutableFieldArray{T} <: FieldArray{Tuple{2}, T, 1}
 end
 
 @testset "$(basename(@__FILE__))" begin
-    @testset "1. CellArray allocation ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+    @testset "1. CellArray allocation ($array_type arrays; precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
         @testset "Number cells" begin
 			dims = (2,3)
 			A = CellArray{Float}(undef, dims)
@@ -86,10 +86,6 @@ end
 			@test eltype(B)      == Int32
 			@test eltype(C)      == Float
 			@test eltype(D)      == Int32
-			@test typeof(A)      == CellArrays.CellArray{Float, length(dims), 0, Array{eltype(A.data),_N}}
-			@test typeof(B)      == CellArrays.CellArray{Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
-			@test typeof(C)      == CellArrays.CellArray{Float, length(dims), 1, Array{eltype(C.data),_N}}
-			@test typeof(D)      == CellArrays.CellArray{Int32, length(dims), 4, Array{eltype(D.data),_N}}
 			@test length(A.data) == prod(dims)
 			@test length(B.data) == prod(dims)
 			@test length(C.data) == prod(dims)
@@ -98,12 +94,23 @@ end
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
+			if array_type == "CUDA"
+				@test typeof(A)      == CellArrays.CellArray{Float, length(dims), 0, CuArray{eltype(A.data),_N, CUDA.DeviceMemory}}
+				@test typeof(B)      == CellArrays.CellArray{Int32, length(dims), prod(dims), CuArray{eltype(B.data),_N}} # NOTE: the general constructor used for B is not yet specialized for CUDA.
+				@test typeof(C)      == CellArrays.CellArray{Float, length(dims), 1, CuArray{eltype(C.data),_N, CUDA.DeviceMemory}}
+				@test typeof(D)      == CellArrays.CellArray{Int32, length(dims), 4, CuArray{eltype(D.data),_N, CUDA.DeviceMemory}}
+			else
+				@test typeof(A)      == CellArrays.CellArray{Float, length(dims), 0, Array{eltype(A.data),_N}}
+				@test typeof(B)      == CellArrays.CellArray{Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
+				@test typeof(C)      == CellArrays.CellArray{Float, length(dims), 1, Array{eltype(C.data),_N}}
+				@test typeof(D)      == CellArrays.CellArray{Int32, length(dims), 4, Array{eltype(D.data),_N}}
+			end
         end;
 		@testset "SArray cells" begin
-			dims      = (2,3)
-			celldims  = (3,4)
-			T_Float = SMatrix{celldims..., Float, prod(celldims)}
-			T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
+			dims     = (2,3)
+			celldims = (3,4)
+			T_Float  = SMatrix{celldims..., Float, prod(celldims)}
+			T_Int32  = SMatrix{celldims...,   Int32, prod(celldims)}
 			A = CellArray{T_Float}(undef, dims)
 			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, undef, dims...)
 			C = CellArray{T_Float,1}(undef, dims)
@@ -120,10 +127,6 @@ end
 			@test eltype(B)      == T_Int32
 			@test eltype(C)      == T_Float
 			@test eltype(D)      == T_Int32
-			@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N}}
-			@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
-			@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N}}
-			@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
 			@test length(A.data) == prod(dims)*prod(celldims)
 			@test length(B.data) == prod(dims)*prod(celldims)
 			@test length(C.data) == prod(dims)*prod(celldims)
@@ -132,11 +135,22 @@ end
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
+			if array_type == "CUDA"
+				@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N, CUDA.DeviceMemory}}
+				@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}} # NOTE: the general constructor used for B is not yet specialized for CUDA.
+				@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N, CUDA.DeviceMemory}}
+				@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N, CUDA.DeviceMemory}}
+			else
+				@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N}}
+				@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
+				@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N}}
+				@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
+			end
         end;
 		@testset "FieldArray cells" begin
 			dims      = (2,3)
 			celldims  = size(MyFieldArray)
-			T_Float = MyFieldArray{Float}
+			T_Float   = MyFieldArray{Float}
 			T_Int32   = MyFieldArray{Int32}
 			A = CellArray{T_Float}(undef, dims)
 			B = CellArrays.CellArray{T_Int32,prod(dims)}(Array, undef, dims...)
@@ -154,10 +168,6 @@ end
 			@test eltype(B)      == T_Int32
 			@test eltype(C)      == T_Float
 			@test eltype(D)      == T_Int32
-			@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N}}
-			@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
-			@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N}}
-			@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
 			@test length(A.data) == prod(dims)*prod(celldims)
 			@test length(B.data) == prod(dims)*prod(celldims)
 			@test length(C.data) == prod(dims)*prod(celldims)
@@ -166,15 +176,26 @@ end
 			@test B.dims         == dims
 			@test C.dims         == dims
 			@test D.dims         == dims
+			if array_type == "CUDA"
+				@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N, CUDA.DeviceMemory}}
+				@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}} # NOTE: the general constructor used for B is not yet specialized for CUDA.
+				@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N, CUDA.DeviceMemory}}
+				@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N, CUDA.DeviceMemory}}
+			else
+				@test typeof(A)      == CellArrays.CellArray{T_Float, length(dims), 0, Array{eltype(A.data),_N}}
+				@test typeof(B)      == CellArrays.CellArray{T_Int32, length(dims), prod(dims), Array{eltype(B.data),_N}}
+				@test typeof(C)      == CellArrays.CellArray{T_Float, length(dims), 1, Array{eltype(C.data),_N}}
+				@test typeof(D)      == CellArrays.CellArray{T_Int32, length(dims), 4, Array{eltype(D.data),_N}}
+			end
         end;
     end;
-	@testset "2. functions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
-		dims      = (2,3)
-		celldims  = (3,4) # Needs to be compatible for matrix multiplication!
-		T_Float = SMatrix{celldims..., Float, prod(celldims)}
-		T_Int32   = SMatrix{celldims...,   Int32, prod(celldims)}
+	@testset "2. functions ($array_type arrays; precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+		dims     = (2,3)
+		celldims = (3,4) # Needs to be compatible for matrix multiplication!
+		T_Float  = SMatrix{celldims..., Float, prod(celldims)}
+		T_Int32  = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float = MyFieldArray{Float}
-		T2_Int32   = MyFieldArray{Int32}
+		T2_Int32 = MyFieldArray{Int32}
 		A = CellArray{Float}(undef, dims)
 		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
 		C = CellArray{T_Float}(undef, dims)
@@ -194,25 +215,61 @@ end
 			@test size(H) == dims
         end;
 		@testset "similar" begin
-			@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
-			@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N}}
-			@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
+			if array_type == "CUDA"
+				@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+				@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N, CUDA.DeviceMemory}}
+			elseif array_type == "AMDGPU"
+				@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+				@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N, AMDGPU.Runtime.Mem.HIPBuffer}}
+			else
+				@test typeof(similar(A, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(B, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(B), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(C, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(D, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(D), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(E, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims),              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(F, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(F), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(G, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(G), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(H, T_Int32)) == CellArrays.CellArray{T_Int32, length(dims), blocklength(H), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(A, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(B, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(B), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(C, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(D, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(D), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(E, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2,              0, Array{eltype(T_Int32),_N}}
+				@test typeof(similar(F, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(F), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(G, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(G), Array{eltype(T_Int32),_N}}
+				@test typeof(similar(H, T_Int32, (1,2))) == CellArrays.CellArray{T_Int32, 2, blocklength(H), Array{eltype(T_Int32),_N}}
+			end
         end;
 		@testset "fill!" begin
-			allowscalar() do
+			allowscalar(true) # "allowscalar do" is not defined for AMDGPU
 				fill!(A, 9);   @test all(Base.Array(A.data) .== 9.0)
 				fill!(B, 9.0); @test all(Base.Array(B.data) .== 9)
 				fill!(C, (1:length(eltype(C)))); @test all(C .== (T_Float(1:length(eltype(C)))  for i=1:dims[1], j=1:dims[2]))
@@ -221,10 +278,20 @@ end
 				fill!(F, (1:length(eltype(F)))); @test all(F .== (T2_Int32(1:length(eltype(F)))   for i=1:dims[1], j=1:dims[2]))
 				fill!(G, (1:length(eltype(G)))); @test all(G .== (T_Float(1:length(eltype(G)))  for i=1:dims[1], j=1:dims[2]))
 				fill!(H, (1:length(eltype(H)))); @test all(H .== (T_Int32(1:length(eltype(H)))    for i=1:dims[1], j=1:dims[2]))
+			allowscalar(false)
+		end
+		@testset "constructors" begin
+			@test isa(CPUCellArray(A), CPUCellArray)
+			if array_type == "CUDA"
+				@test isa(CuCellArray(CPUCellArray(A)), CuCellArray)
+			# elseif array_type == "AMDGPU"
+			# 	@test isa(ROCCellArray(CPUCellArray(A)), ROCCellArray)    # TODO: for some reason this results in scalar indexing
+			elseif array_type == "Metal"
+				@test isa(MtlCellArray(CPUCellArray(A)), MtlCellArray)
 			end
 		end
 		@testset "getindex / setindex! (array programming)" begin
-			allowscalar() do
+			allowscalar(true) # "allowscalar do" is not defined for AMDGPU
 				A.data.=0; B.data.=0; C.data.=0; D.data.=0; E.data.=0; F.data.=0; G.data.=0; H.data.=0;
 				A[2,2:3] .= 9
 				B[2,2:3] .= 9.0
@@ -242,7 +309,7 @@ end
 				@test all(F[2,2:3] .== (T2_Int32(1:length(T2_Int32)), T2_Int32(1:length(T2_Int32))))
 				@test all(G[2,2:3] .== (T_Float(1:length(T_Float)), T_Float(1:length(T_Float))))
 				@test all(H[2,2:3] .== (T_Int32(1:length(T_Int32)), T_Int32(1:length(T_Int32))))
-			end
+			allowscalar(false)
         end;
 		@testset "getindex / setindex! (GPU kernel programming)" begin
 			celldims2 = (4,4) # Needs to be compatible for matrix multiplication!
@@ -332,21 +399,90 @@ end
 			@test size(field(E, :yyxx))	== dims
 			@test size(field(E, :yyyy))	== dims
 		end;
-		@testset "field property" begin
+		@testset "field property (host side access)" begin
 			@test E.xxxx == field(E, :xxxx)
 			@test E.yxxx == field(E, :yxxx)
 			@test E.xyxx == field(E, :xyxx)
 			@test E.yyxx == field(E, :yyxx)
 			@test E.yyyy == field(E, :yyyy)
 		end;
+		@testset "field property (device side access)" begin
+			if array_type == "CUDA"
+				function add2D_CUDA_properties!(A, B)
+				    ix = (CUDA.blockIdx().x-1) * CUDA.blockDim().x + CUDA.threadIdx().x
+				    iy = (CUDA.blockIdx().y-1) * CUDA.blockDim().y + CUDA.threadIdx().y
+				    A.yxxx[ix,iy] = A.yxxx[ix,iy] + 10*B.yxxx[ix,iy];
+					A.yyyy[ix,iy] = A.yyyy[ix,iy] + 10*B.yyyy[ix,iy];
+				    return
+				end
+				E.data.=1;  @cuda blocks=size(E) add2D_CUDA_properties!(E, E); CUDA.synchronize();  @test all(Base.Array(E.yxxx) .== 11) && all(Base.Array(E.yyyy) .== 11)
+			# elseif array_type == "AMDGPU"  # TODO: activate once supported
+			# 	function add2D_AMDGPU_properties!(A, B)
+			# 		ix = (AMDGPU.blockIdx().x-1) * AMDGPU.blockDim().x + AMDGPU.threadIdx().x
+			# 	    iy = (AMDGPU.blockIdx().y-1) * AMDGPU.blockDim().y + AMDGPU.threadIdx().y
+			# 	    A.yxxx[ix,iy] = A.yxxx[ix,iy] + 10*B.yxxx[ix,iy];
+			# 		A.yyyy[ix,iy] = A.yyyy[ix,iy] + 10*B.yyyy[ix,iy];
+			# 	    return
+			# 	end
+			# 	E.data.=1;  @roc gridsize=size(E) add2D_AMDGPU_properties!(E, E); AMDGPU.synchronize();  @test all(Base.Array(E.yxxx) .== 11) && all(Base.Array(E.yyyy) .== 11)
+			elseif array_type == "Metal"
+				function add2D_Metal_properties!(A, B)
+					ix = (Metal.threadgroup_position_in_grid_3d().x-1) * Metal.threads_per_threadgroup_3d().x + Metal.thread_position_in_threadgroup_3d().x
+				    iy = (Metal.threadgroup_position_in_grid_3d().y-1) * Metal.threads_per_threadgroup_3d().y + Metal.thread_position_in_threadgroup_3d().y
+				    A.yxxx[ix,iy] = A.yxxx[ix,iy] + 10*B.yxxx[ix,iy];
+					A.yyyy[ix,iy] = A.yyyy[ix,iy] + 10*B.yyyy[ix,iy];
+				    return
+				end
+				E.data.=1;  @metal groups=size(E) add2D_Metal_properties!(E, E); Metal.synchronize();  @test all(Base.Array(E.yxxx) .== 11) && all(Base.Array(E.yyyy) .== 11)
+			end
+		end
+		@testset "comparisons (array programming)" begin
+			A.data.=9; B.data.=9; C.data.=9; D.data.=9; E.data.=9; F.data.=9; G.data.=9; H.data.=9;
+			A2=similar(A); B2=similar(B); C2=similar(C); D2=similar(D); E2=similar(E); F2=similar(F); G2=similar(G); H2=similar(H);
+			@test A !== A2 && !(A == A2)
+			@test B !== B2 && !(B == B2)
+			@test C !== C2 && !(C == C2)
+			@test D !== D2 && !(D == D2)
+			@test E !== E2 && !(E == E2)
+			@test F !== F2 && !(F == F2)
+			@test G !== G2 && !(G == G2)
+			@test H !== H2 && !(H == H2)
+			# Comparison does not work for integers:
+			# @test A !== A2 && A2 < A
+			# # @test B !== B2 && B2 < B
+			# @test C !== C2 && C2 < C
+			# # @test D !== D2 && D2 < D
+			# @test E !== E2 && E2 < E
+			# # @test F !== F2 && F2 < F
+			# @test G !== G2 && G2 < G
+			# # @test H !== H2 && H2 < H
+			A3=deepcopy(A); B3=deepcopy(B); C3=deepcopy(C); D3=deepcopy(D); E3=deepcopy(E); F3=deepcopy(F); G3=deepcopy(G); H3=deepcopy(H);
+			@test A !== A3 && A == A3
+			@test B !== B3 && B == B3
+			@test C !== C3 && C == C3
+			@test D !== D3 && D == D3
+			@test E !== E3 && E == E3
+			@test F !== F3 && F == F3
+			@test G !== G3 && G == G3
+			@test H !== H3 && H == H3
+			# Comparison does not work for integers:
+			# @test A !== A3 && !(A3 < A)
+			# # @test B !== B3 && !(B3 < B)
+			# @test C !== C3 && !(C3 < C)
+			# # @test D !== D3 && !(D3 < D)
+			# @test E !== E3 && !(E3 < E)
+			# # @test F !== F3 && !(F3 < F)
+			# @test G !== G3 && !(G3 < G)
+			# # @test H !== H3 && !(H3 < H)
+		end;
     end;
-	@testset "3. Exceptions ($array_type arrays) (precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
-		dims       = (2,3)
-		celldims   = (3,4)
+	@testset "3. Exceptions ($array_type arrays; precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
+		dims     = (2,3)
+		celldims = (3,4)
 		T_Float  = SMatrix{celldims..., Float, prod(celldims)}
-		T_Int32    = SMatrix{celldims...,   Int32, prod(celldims)}
+		T_Int32  = SMatrix{celldims...,   Int32, prod(celldims)}
 		T2_Float = MyFieldArray{Float}
-		T2_Int32   = MyFieldArray{Int32}
+		T2_Int32 = MyFieldArray{Int32}
 		A = CellArray{Float}(undef, dims)
 		B = CellArrays.CellArray{Int32,prod(dims)}(Array, undef, dims)
 		C = CellArray{T_Float}(undef, dims)
