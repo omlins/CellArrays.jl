@@ -436,6 +436,43 @@ end
 				E.data.=1;  @metal groups=size(E) add2D_Metal_properties!(E, E); Metal.synchronize();  @test all(Base.Array(E.yxxx) .== 11) && all(Base.Array(E.yyyy) .== 11)
 			end
 		end
+		@testset "comparisons (array programming)" begin
+			A.data.=9; B.data.=9; C.data.=9; D.data.=9; E.data.=9; F.data.=9; G.data.=9; H.data.=9;
+			A2=similar(A); B2=similar(B); C2=similar(C); D2=similar(D); E2=similar(E); F2=similar(F); G2=similar(G); H2=similar(H);
+			@test A !== A2 && !(A == A2)
+			@test B !== B2 && !(B == B2)
+			@test C !== C2 && !(C == C2)
+			@test D !== D2 && !(D == D2)
+			@test E !== E2 && !(E == E2)
+			@test F !== F2 && !(F == F2)
+			@test G !== G2 && !(G == G2)
+			@test H !== H2 && !(H == H2)
+			@test A !== A2 && A < A2
+			@test B !== B2 && B < B2
+			@test C !== C2 && C < C2
+			@test D !== D2 && D < D2
+			@test E !== E2 && E < E2
+			@test F !== F2 && F < F2
+			@test G !== G2 && G < G2
+			@test H !== H2 && H < H2
+			A3=deepcopy(A); B3=deepcopy(B); C3=deepcopy(C); D3=deepcopy(D); E3=deepcopy(E); F3=deepcopy(F); G3=deepcopy(G); H3=deepcopy(H);
+			@test A !== A3 && A == A3
+			@test B !== B3 && B == B3
+			@test C !== C3 && C == C3
+			@test D !== D3 && D == D3
+			@test E !== E3 && E == E3
+			@test F !== F3 && F == F3
+			@test G !== G3 && G == G3
+			@test H !== H3 && H == H3
+			@test A !== A3 && !(A < A3)
+			@test B !== B3 && !(B < B3)
+			@test C !== C3 && !(C < C3)
+			@test D !== D3 && !(D < D3)
+			@test E !== E3 && !(E < E3)
+			@test F !== F3 && !(F < F3)
+			@test G !== G3 && !(G < G3)
+			@test H !== H3 && !(H < H3)
+		end;
     end;
 	@testset "3. Exceptions ($array_type arrays; precision: $(nameof(Float)))" for (array_type, Array, CellArray, allowscalar, Float) in zip(array_types, ArrayConstructors, CellArrayConstructors, allowscalar_functions, precision_types) 
 		dims     = (2,3)
