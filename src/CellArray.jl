@@ -241,12 +241,12 @@ function define_MtlCellArray()
         const MtlCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlArray{T_elem,CellArrays._N}}
         const MtlDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlDeviceArray{T_elem,CellArrays._N}}
 
-        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
+        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
         MtlCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = MtlCellArray{T,B}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,CellArrays.B0}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = MtlCellArray{T}(undef, dims)
 
-        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
+        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
 
         Base.show(io::IO, A::MtlCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
