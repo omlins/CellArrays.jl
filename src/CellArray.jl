@@ -411,8 +411,9 @@ Return an array view of the field of CellArray `A` designated with `indices` or 
 @inline field(A::CellArray{T,N,1,T_array}, index::Tuple{Int})                        where {T<:ArrayCell,N,  T_array}   = reshape(view(plain_flat(A),        index...,          :), size(A))
 @inline field(A::CellArray{T,N,1,T_array}, indices::NTuple{M,Int})                   where {T<:ArrayCell,N,  T_array,M} = reshape(view(plain_arrayflat(A), indices...,          :), size(A))
 @inline field(A::CellArray{T,N,B,T_array}, indices::Union{Tuple{Int},NTuple{M,Int}}) where {T<:ArrayCell,N,B,T_array,M} = @ArgumentError("the operation is not supported if parameter `B` of `A` is neither `0` nor `1`.")
-@inline field(A::CellArray, indices::Vararg{Int, N})                                 where {N}                          = field(A, indices)
+@inline field(A::CellArray{T}, indices::NTuple{M,Int})                               where {T<:Number,M}                = A
 @inline field(A::CellArray{T,N,B,T_array}, fieldname::Symbol)                        where {T<:FieldArray,N,B,T_array}  = getproperty(A, fieldname)
+@inline field(A::CellArray, indices::Vararg{Int, N})                                 where {N}                          = field(A, indices)
 
 
 ## Helper functions
