@@ -145,18 +145,19 @@ See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`ROCCellArray`](@ref)
 
 See also: [`@define_ROCCellArray`](@ref)
 """
-macro define_CuCellArray() esc(define_CuCellArray()) end
+macro define_CuCellArray() esc(define_CuCellArray(__module__)) end
 
-function define_CuCellArray()
+function define_CuCellArray(caller::Module)
+    @eval caller import CUDA # NOTE: this is required for CUDA.@cuda to work (at least when running the unit tests), which is needed for the GPUCompiler bug workaround
     quote
         const CuCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,CUDA.CuArray{T_elem,CellArrays._N,CUDA.DeviceMemory}}
 
-        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @cuda launch=false launch=false f(A) end; A )
+        CuCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = CuCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) CUDA.@cuda launch=false f(A) end; A )
         CuCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = CuCellArray{T,B}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = CuCellArray{T,CellArrays.B0}(undef, dims)
         CuCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = CuCellArray{T}(undef, dims)
 
-        CuCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArrays.CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @cuda launch=false f(A) end; A)
+        CuCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = (A = CellArrays.CellArray{T,N,B}(CUDA.CuArray(A.data), A.dims); f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) CUDA.@cuda launch=false f(A) end; A)
 
         Base.show(io::IO, A::CuCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
@@ -188,19 +189,20 @@ See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`CuCellArray`](@ref)
 
 See also: [`@define_CuCellArray`](@ref)
 """
-macro define_ROCCellArray() esc(define_ROCCellArray()) end
+macro define_ROCCellArray() esc(define_ROCCellArray(__module__)) end
 
-function define_ROCCellArray()
+function define_ROCCellArray(caller::Module)
+    @eval caller import AMDGPU # NOTE: this is required for AMDGPU.@roc to work (at least when running the unit tests), which is needed for the GPUCompiler bug workaround
     quote
         const ROCCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCArray{T_elem,CellArrays._N}} # TODO: ,AMDGPU.Runtime.Mem.HIPBuffer should be added here later. The moment it has no impact (and would require adaption of the unit tests).
         const ROCDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,AMDGPU.ROCDeviceArray{T_elem,CellArrays._N,AMDGPU.Runtime.Mem.HIPBuffer}}
         
-        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
+        ROCCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = ROCCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) AMDGPU.@roc launch=false f(A) end; A )
         ROCCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = ROCCellArray{T,B}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = ROCCellArray{T,CellArrays.B0}(undef, dims)
         ROCCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = ROCCellArray{T}(undef, dims)
 
-        ROCCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @roc launch=false f(A) end; A )
+        ROCCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(AMDGPU.ROCArray(A.data), A.dims); A ) # TODO: Once reshape is implemented in AMDGPU, the workaround can be applied as well: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) AMDGPU.@roc launch=false f(A) end; A )
 
         Base.show(io::IO, A::ROCCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::ROCCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element ROCCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
@@ -234,19 +236,20 @@ See also: [`CellArray`](@ref), [`CPUCellArray`](@ref), [`CuCellArray`](@ref), [`
 
 See also: [`@define_CuCellArray`](@ref), [`@define_ROCCellArray`](@ref)
 """
-macro define_MtlCellArray() esc(define_MtlCellArray()) end
+macro define_MtlCellArray() esc(define_MtlCellArray(__module__)) end
 
-function define_MtlCellArray()
+function define_MtlCellArray(caller::Module)
+    @eval caller import Metal # NOTE: this is required for Metal.@metal to work (at least when running the unit tests), which is needed for the GPUCompiler bug workaround
     quote
         const MtlCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlArray{T_elem,CellArrays._N}}
         const MtlDeviceCellArray{T,N,B,T_elem} = CellArrays.CellArray{T,N,B,Metal.MtlDeviceArray{T_elem,CellArrays._N}}
 
-        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
+        MtlCellArray{T,B}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N,B} = ( CellArrays.check_T(T); A = MtlCellArray{T,N,B,CellArrays.eltype(T)}(undef, dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) Metal.@metal launch=false f(A) end; A )
         MtlCellArray{T,B}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N,B} = MtlCellArray{T,B}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::NTuple{N,Int}) where {T<:CellArrays.Cell,N} = MtlCellArray{T,CellArrays.B0}(undef, dims)
         MtlCellArray{T}(::UndefInitializer, dims::Vararg{Int, N}) where {T<:CellArrays.Cell,N} = MtlCellArray{T}(undef, dims)
 
-        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) @metal launch=false f(A) end; A )
+        MtlCellArray(A::CellArrays.CellArray{T,N,B,T_array}) where {T,N,B,T_array} = ( A = CellArrays.CellArray{T,N,B}(Metal.MtlArray(A.data), A.dims); A) #workaround: f(A)=(CellArrays.plain_flat(A); CellArrays.plain_arrayflat(A); return); if (B in (0,1)) Metal.@metal launch=false f(A) end; A )
 
         Base.show(io::IO, A::MtlCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::MtlCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element MtlCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
