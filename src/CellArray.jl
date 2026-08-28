@@ -370,7 +370,7 @@ Base.:(==)(A::CellArray, B::CellArray) = all(A.data .== B.data) # NOTE: for some
 end
 
 
-## API functions
+## API FUNCTIONS
 
 """
     cellsize(A)
