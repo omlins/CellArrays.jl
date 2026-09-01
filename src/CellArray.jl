@@ -161,6 +161,50 @@ function define_CuCellArray(caller::Module)
 
         Base.show(io::IO, A::CuCellArray) = Base.show(io, CellArrays.CPUCellArray(A))
         Base.show(io::IO, ::MIME"text/plain", A::CuCellArray{T,N,B}) where {T,N,B} = ( println(io, "$(length(A))-element CuCellArray{$T, $N, $B, $(CellArrays.eltype(T))}:");  Base.print_array(io, CellArrays.CPUCellArray(A)) )
+
+        # Field access for device-side CellArrays (i.e. those whose `data` is a
+        # CuDeviceArray). The generic `CellArrays.field`/`Base.getproperty` methods
+        # (which build a `reshape(view(...), size(A))`) cannot be compiled to GPU
+        # kernels: on the device `view(::CuDeviceArray, ...)` falls back to a
+        # `Base.SubArray`, and the subsequent `reshape` of that `SubArray` ends up in
+        # `GPUArrays`' host-side `reshape` which builds an error message via
+        # `print_to_string`, i.e. an unsupported call to an external C function
+        # (`GPUCompiler.InvalidIRError`).
+        #
+        # Here we instead construct a `CuDeviceArray` of shape `size(A)` pointing
+        # directly at the selected field (with a pointer offset into `A.data`), which
+        # has fully specialized, GPU-compilable `getindex`/`setindex!`. This single
+        # `::Symbol` method (dispatched for all B values) is `@inline`d and
+        # `Base.@constprop :aggressive` so that, within a GPU kernel, the literal field
+        # name of `A.yxxx` (i.e. the `:yxxx` passed to `getproperty`) constant-folds:
+        # the field index `k` (and thus the pointer `offset`) become compile-time
+        # literals and the returned `CuDeviceArray{T_el,N,Addr}` has a fully concrete
+        # type, so the subsequent element-wise `getindex`/`setindex!` stay statically
+        # specialized. A `@generated` method routed via `Val(fieldname)` is *not*
+        # reliably constant-folded from within a kernel and yields an `Any`-typed /
+        # dynamically-dispatched return.
+        # NOTE: For B=0 (array of struct like storage) a field occupies `prod(size(A))`
+        # contiguous elements of `A.data`; for B=1 (struct of array like storage) it is
+        # strided with stride `sizeof(T_el)` (hence `blocklen = 1`). The cell is
+        # flattened (`LinearIndices(cellsize(T))`) so that a single integer `k` selects
+        # the field, regardless of the cell's dimensionality.
+        Base.@constprop :aggressive @inline function Base.getproperty(A::CellArrays.CellArray{T,N,B,CUDA.CuDeviceArray{T_el,CellArrays._N,Addr}}, fieldname::Symbol) where {T<:CellArrays.FieldArray,N,B,T_el,Addr}
+            (fieldname === :data || fieldname === :dims) && return Base.getfield(A, fieldname)
+            # `fieldname` is a literal `Symbol` at the call site (e.g. `A.yxxx`), so,
+            # thanks to `@constprop :aggressive`, the `findfirst` over `fieldnames(T)`
+            # (a `Tuple{Vararg{Symbol}}` of fixed length for the compile-time-known
+            # cell type `T`) constant-folds to a literal integer `k`. `pointer(A.data)`
+            # returns a `LLVMPtr{T_el,Addr}` of the right address space, so the
+            # element-offset arithmetic yields a `CuDeviceArray{T_el,N,Addr}` view of
+            # the selected field (fully concrete, GPU-compilable `getindex`/
+            # `setindex!`). Building such a view via `view`/`reshape` instead fails on
+            # the device (see https://github.com/omlins/CellArrays.jl).
+            k        = CellArrays.findfirst(==(fieldname), CellArrays.fieldnames(T))
+            blocklen = (B == 0) ? CellArrays.prod(A.dims) : 1
+            offset   = (k - 1) * blocklen
+            maxsize  = CellArrays.prod(A.dims) * CellArrays.celllength(A) * sizeof(T_el)
+            return CUDA.CuDeviceArray{T_el,N,Addr}(pointer(A.data) + offset * sizeof(T_el), A.dims, maxsize)
+        end
     end
 end
 
