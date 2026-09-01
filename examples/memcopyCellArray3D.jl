@@ -30,7 +30,7 @@ copy!(T2.data, T.data);
 
 # GPU launch parameters
 threads = (32, 8, 1)
-blocks  = (nx, ny, nz) .÷ threads
+blocks  = cld.((nx, ny, nz), threads)
 
 # Time loop
 for it = 1:nt
